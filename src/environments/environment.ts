@@ -1,6 +1,5 @@
 export const environment = {
   production: false,
-  apiUrl: 'http://localhost:3000/api'
+  apiUrl: 'https://hikma-api-hg2q.onrender.com/api'
 };
 
-//https://hikma-api-hg2q.onrender.com/api
