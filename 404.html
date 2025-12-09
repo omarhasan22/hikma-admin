@@ -1,5 +1,6 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
+
 <head>
   <meta charset="utf-8">
   <title>HikmaAdmin</title>
@@ -16,20 +17,58 @@
     // https://www.foo.com/?/one/two&a=b~and~c=d#qwe
     // Note: this 404.html file must be at least 512 bytes for some
     // browsers to accept it.
-    (function(l) {
-      if (l.search[1] === '/' ) {
-        var decoded = l.search.slice(1).split('&').map(function(s) { 
+    (function (l) {
+      if (l.search[1] === '/') {
+        var decoded = l.search.slice(1).split('&').map(function (s) {
           return s.replace(/~and~/g, '&')
         }).join('?');
         window.history.replaceState(null, null,
-            l.pathname.slice(0, -1) + decoded + l.hash
+          l.pathname.slice(0, -1) + decoded + l.hash
         );
       }
     }(window.location))
   </script>
+  <script type="text/javascript">
+      // Load scripts and styles from index.html
+      (function () {
+        var path = '/hikma-admin/index.html';
+        fetch(path)
+          .then(function (response) { return response.text(); })
+          .then(function (html) {
+            var parser = new DOMParser();
+            var doc = parser.parseFromString(html, 'text/html');
+
+            // Load stylesheets
+            var styles = doc.querySelectorAll('link[rel="stylesheet"]');
+            styles.forEach(function (link) {
+              var newLink = document.createElement('link');
+              newLink.rel = 'stylesheet';
+              newLink.href = link.href;
+              document.head.appendChild(newLink);
+            });
+
+            // Load scripts
+            var scripts = doc.querySelectorAll('script[src]');
+            scripts.forEach(function (script) {
+              var newScript = document.createElement('script');
+              if (script.type) newScript.type = script.type;
+              if (script.async) newScript.async = true;
+              if (script.defer) newScript.defer = true;
+              newScript.src = script.src;
+              document.body.appendChild(newScript);
+            });
+          })
+          .catch(function (err) {
+            console.error('Failed to load index.html:', err);
+            // Fallback: redirect to index.html
+            window.location.href = '/hikma-admin/index.html';
+          });
+      })();
+  </script>
 </head>
+
 <body>
   <app-root></app-root>
 </body>
-</html>
 
+</html>

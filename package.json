@@ -6,7 +6,8 @@
     "start": "ng serve",
     "build": "ng build",
     "build:gh-pages": "ng build --configuration github-pages",
-    "deploy": "npm run build:gh-pages && npx gh-pages -d dist/hikma-admin",
+    "postbuild:gh-pages": "node scripts/copy-404.js",
+    "deploy": "npm run build:gh-pages && npx gh-pages -d dist/hikma-admin/browser",
     "watch": "ng build --watch --configuration development",
     "test": "ng test"
   },
