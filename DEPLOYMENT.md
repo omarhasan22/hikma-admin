@@ -31,28 +31,38 @@ The project includes a GitHub Actions workflow that automatically deploys to Git
    - Once complete, your site will be available at:
      `https://[your-username].github.io/hikma-admin/`
 
-## Manual Deployment
+## Manual Deployment (Using GitHub Pages Branch)
 
-If you prefer to deploy manually:
+If you're deploying using GitHub Pages with a branch source (not GitHub Actions):
 
-1. **Build the project:**
+### Initial Setup
+
+1. **Install gh-pages package:**
    ```bash
-   npm run build:gh-pages
+   npm install --save-dev gh-pages
    ```
 
-2. **Deploy to GitHub Pages:**
-   - Use a tool like `gh-pages` package:
-     ```bash
-     npm install --save-dev gh-pages
-     ```
-   - Add to `package.json` scripts:
-     ```json
-     "deploy": "npm run build:gh-pages && npx gh-pages -d dist/hikma-admin/browser"
-     ```
-   - Run:
-     ```bash
-     npm run deploy
-     ```
+2. **Configure GitHub Pages:**
+   - Go to your repository on GitHub
+   - Navigate to **Settings** → **Pages**
+   - Under **Source**, select **Deploy from a branch**
+   - Choose the `gh-pages` branch (or your preferred branch)
+   - Select `/ (root)` as the folder
+
+### Deploying
+
+Simply run:
+```bash
+npm run deploy
+```
+
+This command will:
+1. Build the project with the GitHub Pages configuration
+2. Deploy the built files to the `gh-pages` branch
+3. GitHub Pages will automatically serve your site from that branch
+
+Your site will be available at:
+`https://[your-username].github.io/hikma-admin/`
 
 ## Configuration
 
