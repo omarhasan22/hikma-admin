@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams, HttpContext } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 
@@ -16,7 +16,7 @@ export interface ApiResponse<T> {
 export class ApiService {
   private apiUrl = environment.apiUrl;
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) { }
 
   private getHeaders(): HttpHeaders {
     const token = this.getValidToken();
@@ -30,10 +30,10 @@ export class ApiService {
   private getValidToken(): string | null {
     const token = localStorage.getItem('accessToken');
     if (!token) return null;
-    
+
     // Remove quotes if present, trim whitespace
     let cleaned = token.trim().replace(/^["']|["']$/g, '');
-    
+
     // Validate JWT format (should have 3 parts separated by dots)
     const parts = cleaned.split('.');
     if (parts.length !== 3) {
@@ -41,7 +41,7 @@ export class ApiService {
       localStorage.removeItem('accessToken');
       return null;
     }
-    
+
     return cleaned;
   }
 
@@ -86,10 +86,17 @@ export class ApiService {
     });
   }
 
-  delete<T>(endpoint: string): Observable<ApiResponse<T>> {
-    return this.http.delete<ApiResponse<T>>(`${this.apiUrl}${endpoint}`, {
-      headers: this.getHeaders()
-    });
+  delete<T>(endpoint: string, body?: any): Observable<ApiResponse<T>> {
+    if (body) {
+      return this.http.request<ApiResponse<T>>('DELETE', `${this.apiUrl}${endpoint}`, {
+        headers: this.getHeaders(),
+        body: body
+      });
+    } else {
+      return this.http.delete<ApiResponse<T>>(`${this.apiUrl}${endpoint}`, {
+        headers: this.getHeaders()
+      });
+    }
   }
 }
 

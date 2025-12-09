@@ -37,8 +37,7 @@ import { DataCacheService } from '../../services/data-cache.service';
             <p *ngIf="image.alt_text"><strong>Alt Text:</strong> {{ image.alt_text }}</p>
             <p><strong>Order:</strong> {{ image.display_order || 0 }}</p>
             <div class="image-actions">
-              <button (click)="editImage(image)" class="btn btn-sm btn-secondary">Edit</button>
-              <button (click)="deleteImage(image.id)" class="btn btn-sm btn-danger">Delete</button>
+              <button (click)="deleteImage(image)" class="btn btn-sm btn-danger">Delete</button>
             </div>
           </div>
         </div>
@@ -52,7 +51,7 @@ import { DataCacheService } from '../../services/data-cache.service';
       <div *ngIf="showModal" class="modal-overlay" (click)="closeModal()">
         <div class="modal-content" (click)="$event.stopPropagation()">
           <div class="modal-header">
-            <h3>{{ editingImage ? 'Edit Service Image' : 'Create Service Image' }}</h3>
+            <h3>Add Service Image</h3>
             <button (click)="closeModal()" class="close-btn">&times;</button>
           </div>
           <form (ngSubmit)="saveImage()" #imageForm="ngForm">
@@ -65,8 +64,7 @@ import { DataCacheService } from '../../services/data-cache.service';
             </div>
             <div class="form-group">
               <label>Image *</label>
-              <input type="file" accept="image/*" (change)="onFileSelected($event)" class="form-control" [required]="!editingImage" />
-              <small *ngIf="editingImage">Leave empty to keep current image</small>
+              <input type="file" accept="image/*" (change)="onFileSelected($event)" class="form-control" required />
             </div>
             <div class="form-group">
               <label>Alt Text</label>
@@ -79,7 +77,7 @@ import { DataCacheService } from '../../services/data-cache.service';
             <div class="modal-actions">
               <button type="button" (click)="closeModal()" class="btn btn-secondary">Cancel</button>
               <button type="submit" [disabled]="!imageForm.valid" class="btn btn-primary">
-                Save
+                Add Image
               </button>
             </div>
           </form>
@@ -221,7 +219,6 @@ export class ServiceImagesComponent implements OnInit, OnDestroy {
   services: Service[] = [];
   error = '';
   showModal = false;
-  editingImage: ServiceImage | null = null;
   selectedServiceId = '';
   selectedFile: File | null = null;
   private routerSubscription?: Subscription;
@@ -251,7 +248,7 @@ export class ServiceImagesComponent implements OnInit, OnDestroy {
         this.services = services;
       });
     }
-    
+
     // Load images (not cached, as they depend on selected service)
     this.loadImages();
   }
@@ -300,7 +297,6 @@ export class ServiceImagesComponent implements OnInit, OnDestroy {
   }
 
   openCreateModal() {
-    this.editingImage = null;
     this.formData = {
       serviceId: this.selectedServiceId || '',
       altText: '',
@@ -310,83 +306,65 @@ export class ServiceImagesComponent implements OnInit, OnDestroy {
     this.showModal = true;
   }
 
-  editImage(image: ServiceImage) {
-    this.editingImage = image;
-    this.formData = {
-      serviceId: image.service_id || '',
-      altText: image.alt_text || '',
-      displayOrder: image.display_order || 0
-    };
-    this.selectedFile = null;
-    this.showModal = true;
-  }
-
   closeModal() {
     this.showModal = false;
-    this.editingImage = null;
     this.selectedFile = null;
   }
 
   onFileSelected(event: any) {
-    this.selectedFile = event.target.files[0];
+    this.selectedFile = event.target.files?.[0] || null;
   }
 
   saveImage() {
-    if (!this.selectedFile && !this.editingImage) {
+    if (!this.selectedFile) {
       this.error = 'Please select an image';
+      return;
+    }
+
+    if (!this.formData.serviceId) {
+      this.error = 'Please select a service';
       return;
     }
 
     this.error = '';
 
     const formData = new FormData();
-    if (this.selectedFile) {
-      formData.append('image', this.selectedFile);
-    }
+    formData.append('image', this.selectedFile);
+
     if (this.formData.altText) {
       formData.append('altText', this.formData.altText);
     }
-    formData.append('displayOrder', this.formData.displayOrder.toString());
-
-    if (this.editingImage) {
-      this.serviceImageService.updateServiceImage(this.editingImage.id, formData).subscribe({
-        next: (response) => {
-          if (response.status === 'ok') {
-            this.loadImages();
-            this.closeModal();
-          } else {
-            this.error = response.error || 'Failed to save image';
-          }
-        },
-        error: (err) => {
-          console.error('Error updating image:', err);
-          this.error = err.error?.error || 'Failed to save image';
-        }
-      });
-    } else {
-      this.serviceImageService.createServiceImage(this.formData.serviceId, formData).subscribe({
-        next: (response) => {
-          if (response.status === 'ok') {
-            this.loadImages();
-            this.closeModal();
-          } else {
-            this.error = response.error || 'Failed to save image';
-          }
-        },
-        error: (err) => {
-          console.error('Error creating image:', err);
-          this.error = err.error?.error || 'Failed to save image';
-        }
-      });
+    if (this.formData.displayOrder) {
+      formData.append('displayOrder', this.formData.displayOrder.toString());
     }
+
+    this.serviceImageService.addServiceImages(this.formData.serviceId, formData).subscribe({
+      next: (response) => {
+        if (response.status === 'ok') {
+          this.loadImages();
+          this.closeModal();
+        } else {
+          this.error = response.error || 'Failed to add image';
+        }
+      },
+      error: (err) => {
+        console.error('Error adding image:', err);
+        this.error = err.error?.error || 'Failed to add image';
+      }
+    });
   }
 
-  deleteImage(id: string) {
+  deleteImage(image: ServiceImage) {
     if (!confirm('Are you sure you want to delete this image?')) {
       return;
     }
 
-    this.serviceImageService.deleteServiceImage(id).subscribe({
+    if (!image.service_id || !image.image_url) {
+      this.error = 'Invalid image data';
+      return;
+    }
+
+    this.serviceImageService.removeServiceImage(image.service_id, image.image_url).subscribe({
       next: (response) => {
         if (response.status === 'ok') {
           this.loadImages();

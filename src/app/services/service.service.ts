@@ -13,6 +13,7 @@ export interface Service {
   created_by?: string;
   created_at: string;
   updated_at: string;
+  images?: any[]; // Service images nested in service response
 }
 
 export interface CreateServiceDto {
