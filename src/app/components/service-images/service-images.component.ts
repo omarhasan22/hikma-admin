@@ -33,7 +33,7 @@ import { DataCacheService } from '../../services/data-cache.service';
         <div *ngFor="let image of images" class="image-card">
           <img [src]="image.image_url || ''" [alt]="image.alt_text || 'Service image'" />
           <div class="image-info">
-            <p><strong>Service:</strong> {{ getServiceName(image.service_id) }}</p>
+            <p><strong>Service:</strong> {{ getServiceName(image.service_id || '') }}</p>
             <p *ngIf="image.alt_text"><strong>Alt Text:</strong> {{ image.alt_text }}</p>
             <p><strong>Order:</strong> {{ image.display_order || 0 }}</p>
             <div class="image-actions">

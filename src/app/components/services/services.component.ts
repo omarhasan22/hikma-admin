@@ -104,16 +104,6 @@ import { DataCacheService } from '../../services/data-cache.service';
               <label>Description</label>
               <textarea [(ngModel)]="formData.description" name="description" class="form-control" rows="3"></textarea>
             </div>
-            <div class="form-row">
-              <div class="form-group">
-                <label>Price</label>
-                <input type="number" [(ngModel)]="formData.price" name="price" min="0" step="0.01" class="form-control" />
-              </div>
-              <div class="form-group">
-                <label>Duration (minutes)</label>
-                <input type="number" [(ngModel)]="formData.durationMinutes" name="durationMinutes" min="5" max="480" class="form-control" />
-              </div>
-            </div>
             <div class="form-group">
               <label>
                 <input type="checkbox" [(ngModel)]="formData.isActive" name="isActive" />
