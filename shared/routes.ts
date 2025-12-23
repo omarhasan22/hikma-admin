@@ -36,10 +36,25 @@ export const api = {
         200: z.object({ 
           data: z.object({
             accessToken: z.string(),
-            user: z.custom<typeof users.$inferSelect>()
+            refreshToken: z.string().optional(),
+            user: z.custom<typeof users.$inferSelect>().optional()
           })
         }),
         400: errorSchemas.validation,
+        401: errorSchemas.unauthorized,
+      },
+    },
+    refresh: {
+      method: 'POST' as const,
+      path: '/api/auth/refresh',
+      input: z.object({ refreshToken: z.string() }),
+      responses: {
+        200: z.object({ 
+          data: z.object({
+            accessToken: z.string(),
+            refreshToken: z.string().optional()
+          })
+        }),
         401: errorSchemas.unauthorized,
       },
     },
