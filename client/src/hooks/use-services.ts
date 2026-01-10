@@ -20,7 +20,7 @@ export function useService(serviceId: string) {
   return useQuery({
     queryKey: [api.services.get.path, serviceId],
     queryFn: async () => {
-      const url = buildUrl(api.services.get.path, { serviceId });
+      const url = buildUrl(api.services.get.path, { specialtyId: serviceId });
       const res = await apiFetch(url, {});
       const data = api.services.get.responses[200].parse(await res.json());
       return data.result;
@@ -73,7 +73,7 @@ export function useUpdateService() {
 
   return useMutation({
     mutationFn: async ({ serviceId, data }: { serviceId: string; data: FormData | Partial<z.infer<typeof api.services.update.input>> }) => {
-      const url = buildUrl(api.services.update.path, { serviceId });
+      const url = buildUrl(api.services.update.path, { specialtyId: serviceId });
       const isFormData = data instanceof FormData;
       const headers: Record<string, string> = {};
       if (token) {
@@ -111,7 +111,7 @@ export function useDeleteService() {
 
   return useMutation({
     mutationFn: async (serviceId: string) => {
-      const url = buildUrl(api.services.delete.path, { serviceId });
+      const url = buildUrl(api.services.delete.path, { specialtyId: serviceId });
       const res = await apiFetch(url, {
         method: api.services.delete.method,
         token,

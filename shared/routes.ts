@@ -436,7 +436,7 @@ export const api = {
   services: {
     list: {
       method: 'GET' as const,
-      path: '/api/services',
+      path: '/api/specialties',
       responses: {
         200: z.object({
           status: z.string(),
@@ -448,7 +448,7 @@ export const api = {
     },
     get: {
       method: 'GET' as const,
-      path: '/api/services/:serviceId',
+      path: '/api/specialties/:specialtyId',
       responses: {
         200: z.object({
           status: z.string(),
@@ -461,7 +461,7 @@ export const api = {
     },
     create: {
       method: 'POST' as const,
-      path: '/api/services',
+      path: '/api/specialties',
       input: insertServiceSchema,
       responses: {
         201: z.object({ 
@@ -474,7 +474,7 @@ export const api = {
     },
     update: {
       method: 'PUT' as const,
-      path: '/api/services/:serviceId',
+      path: '/api/specialties/:specialtyId',
       input: insertServiceSchema.partial(),
       responses: {
         200: z.object({
@@ -487,7 +487,7 @@ export const api = {
     },
     delete: {
       method: 'DELETE' as const,
-      path: '/api/services/:serviceId',
+      path: '/api/specialties/:specialtyId',
       responses: {
         200: z.object({ 
           status: z.string(),
