@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useServices, useCreateService, useUpdateService, useDeleteService } from "@/hooks/use-services";
 import { Input } from "@/components/ui/input";
@@ -10,7 +10,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger 
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Plus, Edit, Trash2 } from "lucide-react";
+import { Loader2, Plus, Edit, Trash2, ImageIcon, X } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
@@ -110,7 +110,7 @@ export default function SpecialtiesPage() {
                     </TableCell>
                     <TableCell className="text-right pr-6">
                       <div className="flex items-center justify-end gap-2">
-                        <Dialog>
+                        <Dialog key={service.id}>
                           <DialogTrigger asChild>
                             <Button 
                               size="sm" 
@@ -125,13 +125,16 @@ export default function SpecialtiesPage() {
                               <DialogTitle>Edit Specialty</DialogTitle>
                             </DialogHeader>
                             <SpecialtyForm 
+                              key={service.id}
                               service={service}
                               onSubmit={(data) => {
                                 updateMutation.mutate({
                                   serviceId: String(service.id),
                                   data: data
                                 }, {
-                                  onSuccess: () => setEditingService(null)
+                                  onSuccess: () => {
+                                    setEditingService(null);
+                                  }
                                 });
                               }}
                               isLoading={updateMutation.isPending}
@@ -180,6 +183,43 @@ function SpecialtyForm({
   const [description, setDescription] = useState(service?.description || "");
   const [isActive, setIsActive] = useState(service?.is_active !== undefined ? service.is_active : (service?.isActive !== undefined ? service.isActive : true));
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(
+    service?.icon || service?.image || service?.image_url || null
+  );
+
+  // Update form fields when service prop changes
+  useEffect(() => {
+    // Cleanup previous object URL if exists
+    if (imagePreview && imagePreview.startsWith('blob:')) {
+      URL.revokeObjectURL(imagePreview);
+    }
+
+    if (service) {
+      setName(service.name || "");
+      setNameAr(service.name_ar || service.nameAr || "");
+      setDescription(service.description || "");
+      setIsActive(service.is_active !== undefined ? service.is_active : (service.isActive !== undefined ? service.isActive : true));
+      setImagePreview(service.icon || service.image || service.image_url || null);
+      setImageFile(null); // Reset file input when switching between services
+    } else {
+      // Reset form for new specialty
+      setName("");
+      setNameAr("");
+      setDescription("");
+      setIsActive(true);
+      setImagePreview(null);
+      setImageFile(null);
+    }
+  }, [service]);
+
+  // Cleanup object URLs on unmount
+  useEffect(() => {
+    return () => {
+      if (imagePreview && imagePreview.startsWith('blob:')) {
+        URL.revokeObjectURL(imagePreview);
+      }
+    };
+  }, [imagePreview]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -232,12 +272,93 @@ function SpecialtyForm({
 
       <div>
         <Label htmlFor="image">Image {!service && "(optional)"}</Label>
+        
+        {/* Display existing image if available */}
+        {imagePreview && !imageFile && (
+          <div className="mb-3 relative inline-block">
+            <img 
+              src={imagePreview} 
+              alt={name || "Specialty icon"} 
+              className="w-32 h-32 object-cover rounded-lg border border-border"
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="absolute top-1 right-1 h-6 w-6 p-0 bg-background/80 hover:bg-background"
+              onClick={() => {
+                setImagePreview(null);
+                setImageFile(null);
+              }}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
+
+        {/* Display preview of newly selected file */}
+        {imageFile && (
+          <div className="mb-3 relative inline-block">
+            <img 
+              src={URL.createObjectURL(imageFile)} 
+              alt="Preview" 
+              className="w-32 h-32 object-cover rounded-lg border border-border"
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="absolute top-1 right-1 h-6 w-6 p-0 bg-background/80 hover:bg-background"
+              onClick={() => {
+                // Cleanup object URL
+                if (imagePreview && imagePreview.startsWith('blob:')) {
+                  URL.revokeObjectURL(imagePreview);
+                }
+                setImageFile(null);
+                // Restore previous image if it existed
+                if (service) {
+                  setImagePreview(service.icon || service.image || service.image_url || null);
+                } else {
+                  setImagePreview(null);
+                }
+              }}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
+
+        {/* Placeholder when no image */}
+        {!imagePreview && !imageFile && (
+          <div className="mb-3 w-32 h-32 bg-muted rounded-lg flex items-center justify-center border border-border">
+            <ImageIcon className="w-8 h-8 text-muted-foreground" />
+          </div>
+        )}
+
         <Input 
           id="image"
           type="file"
           accept="image/*"
-          onChange={(e) => setImageFile(e.target.files?.[0] || null)}
+          onChange={(e) => {
+            const file = e.target.files?.[0] || null;
+            
+            // Cleanup previous object URL if exists
+            if (imagePreview && imagePreview.startsWith('blob:')) {
+              URL.revokeObjectURL(imagePreview);
+            }
+            
+            setImageFile(file);
+            if (file) {
+              setImagePreview(URL.createObjectURL(file));
+            } else {
+              // Restore original image if clearing file input
+              setImagePreview(service?.icon || service?.image || service?.image_url || null);
+            }
+          }}
         />
+        <p className="text-sm text-muted-foreground mt-1">
+          {service ? "Leave empty to keep current image, or upload a new one to replace it." : "Upload an image for this specialty."}
+        </p>
       </div>
 
       <div className="flex items-center justify-between">
