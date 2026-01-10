@@ -71,12 +71,42 @@ npm run deploy
 
 ## Troubleshooting
 
-### Base Path Issues
+### Base Path Issues (404 Errors for Assets)
 
-If your assets (CSS, JS, images) are not loading:
-- Check that the base path in `package.json` matches your repository name
-- The base path must start with `/` and end with `/`
-- After changing the base path, rebuild and redeploy
+**If you see 404 errors like:**
+- `Failed to load resource: index-CowpvnvV.js:1 404`
+- `Failed to load resource: index-BTwpKP-f.css:1 404`
+
+**This means the base path doesn't match your repository name!**
+
+**To fix:**
+1. Check your actual GitHub Pages URL:
+   - Go to GitHub → Settings → Pages
+   - Look at the "Your site is live at" URL
+   - Or check: `https://username.github.io/REPO-NAME/`
+
+2. Update the base path in `package.json` to match:
+   
+   **If your site is at:** `https://username.github.io/Admin-Hub/`
+   - Use base path: `/Admin-Hub/`
+   
+   **If your site is at:** `https://username.github.io/my-repo/`
+   - Use base path: `/my-repo/`
+   
+   **If your site is at:** `https://username.github.io/` (root)
+   - Use base path: `/`
+
+3. Edit `package.json` line 11:
+   ```json
+   "build:gh-pages": "cross-env VITE_BASE_PATH=/ACTUAL-REPO-NAME/ vite build"
+   ```
+
+4. Rebuild and redeploy:
+   ```bash
+   npm run deploy
+   ```
+
+**Important:** The base path must match exactly what's in your GitHub Pages URL!
 
 ### 404 Errors
 

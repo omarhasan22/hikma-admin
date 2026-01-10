@@ -8,7 +8,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "check": "tsc",
-    "build:gh-pages": "cross-env VITE_BASE_PATH=/Admin-Hub/ vite build",
+    "build:gh-pages": "cross-env VITE_BASE_PATH=/hikma-admin/ vite build",
     "predeploy": "npm run build:gh-pages",
     "deploy": "gh-pages -d dist --dotfiles"
   },
