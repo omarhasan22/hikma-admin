@@ -44,28 +44,28 @@ export default function Dashboard() {
             title="Total Users"
             value={stats?.totalUsers || 0}
             icon={Users}
-            trend="+12%"
+          // trend="+12%"
           />
           <StatCard
             title="Total Doctors"
             value={stats?.totalDoctors || 0}
             icon={Stethoscope}
-            trend="+5%"
+          // trend="+5%"
           />
           <StatCard
             title="Organizations"
             value={stats?.totalOrganizations || 0}
             icon={Building2}
-            trend="+2%"
+          // trend="+2%"
           />
           <StatCard
-            title="Active Services"
+            title="Active Specialties"
             value={stats?.activeServices || 0}
             icon={Activity}
           />
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 bg-card p-6 rounded-2xl border border-border shadow-sm">
             <div className="flex items-center justify-between mb-6">
               <div>
@@ -124,7 +124,7 @@ export default function Dashboard() {
               </button>
             </div>
           </div>
-        </div>
+        </div> */}
       </div>
     </DashboardLayout>
   );

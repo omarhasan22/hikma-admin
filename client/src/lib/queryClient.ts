@@ -1,6 +1,22 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
-const API_BASE_URL = "http://localhost:3000";
+// Backend API URL - frontend connects to backend via HTTP
+// Set VITE_API_URL in .env file or it defaults to http://localhost:3000
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
+
+// Helper to get token from localStorage (Zustand persist stores it as 'auth-storage')
+function getStoredToken(): string | null {
+  try {
+    const stored = localStorage.getItem("auth-storage");
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      return parsed?.state?.token || null;
+    }
+  } catch {
+    // Ignore parse errors
+  }
+  return null;
+}
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
@@ -19,7 +35,7 @@ export async function apiRequest(
   const headers: Record<string, string> = data ? { "Content-Type": "application/json" } : {};
   
   // Add authorization token if available
-  const token = localStorage.getItem("accessToken");
+  const token = getStoredToken();
   if (token) {
     headers["Authorization"] = `Bearer ${token}`;
   }
@@ -45,7 +61,7 @@ export const getQueryFn: <T>(options: {
     const fullUrl = url.startsWith("http") ? url : `${API_BASE_URL}${url}`;
     
     const headers: Record<string, string> = {};
-    const token = localStorage.getItem("accessToken");
+    const token = getStoredToken();
     if (token) {
       headers["Authorization"] = `Bearer ${token}`;
     }

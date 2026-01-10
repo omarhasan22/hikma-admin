@@ -78,20 +78,48 @@ export const services = pgTable("services", {
 export const sliders = pgTable("sliders", {
   id: serial("id").primaryKey(),
   title: text("title").notNull(),
+  description: text("description"),
   imageUrl: text("image_url").notNull(),
+  overlayColor: text("overlay_color"),
   link: text("link"),
   isActive: boolean("is_active").default(true),
-  order: integer("order").default(0),
+  displayOrder: integer("display_order").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// === SERVICE IMAGES ===
+export const serviceImages = pgTable("service_images", {
+  id: serial("id").primaryKey(),
+  serviceId: integer("service_id").references(() => services.id),
+  imageUrl: text("image_url").notNull(),
+  altText: text("alt_text"),
+  displayOrder: integer("display_order").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// === REVIEWS ===
+export const reviews = pgTable("reviews", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id),
+  doctorId: integer("doctor_id").references(() => doctors.id),
+  organizationId: integer("organization_id").references(() => organizations.id),
+  rating: integer("rating").notNull(),
+  comment: text("comment"),
+  isHidden: boolean("is_hidden").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
 // === DAILY TIPS ===
 export const dailyTips = pgTable("daily_tips", {
   id: serial("id").primaryKey(),
   title: text("title").notNull(),
-  content: text("content").notNull(),
+  description: text("description"),
+  content: text("content"),
+  image: text("image"),
   authorId: integer("author_id").references(() => users.id),
   publishDate: timestamp("publish_date").defaultNow(),
   isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
 // === OTP Codes (for Auth) ===
@@ -108,13 +136,25 @@ export const insertUserSchema = createInsertSchema(users).omit({ id: true, creat
 export const insertDoctorSchema = createInsertSchema(doctors).omit({ id: true, rating: true, reviewCount: true, createdAt: true });
 export const insertOrganizationSchema = createInsertSchema(organizations).omit({ id: true, createdAt: true });
 export const insertServiceSchema = createInsertSchema(services).omit({ id: true });
-export const insertSliderSchema = createInsertSchema(sliders).omit({ id: true });
-export const insertTipSchema = createInsertSchema(dailyTips).omit({ id: true });
+export const insertSliderSchema = createInsertSchema(sliders).omit({ id: true, createdAt: true });
+export const insertTipSchema = createInsertSchema(dailyTips).omit({ id: true, createdAt: true });
+export const insertServiceImageSchema = createInsertSchema(serviceImages).omit({ id: true, createdAt: true });
+export const insertReviewSchema = createInsertSchema(reviews).omit({ id: true, createdAt: true });
 
 // === TYPES ===
 export type User = typeof users.$inferSelect;
+export type InsertUser = typeof users.$inferInsert;
 export type Doctor = typeof doctors.$inferSelect;
+export type InsertDoctor = typeof doctors.$inferInsert;
 export type Organization = typeof organizations.$inferSelect;
+export type InsertOrganization = typeof organizations.$inferInsert;
 export type Service = typeof services.$inferSelect;
+export type InsertService = typeof services.$inferInsert;
 export type Slider = typeof sliders.$inferSelect;
+export type InsertSlider = typeof sliders.$inferInsert;
 export type DailyTip = typeof dailyTips.$inferSelect;
+export type InsertTip = typeof dailyTips.$inferInsert;
+export type ServiceImage = typeof serviceImages.$inferSelect;
+export type InsertServiceImage = typeof serviceImages.$inferInsert;
+export type Review = typeof reviews.$inferSelect;
+export type InsertReview = typeof reviews.$inferInsert;

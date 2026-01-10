@@ -19,6 +19,8 @@ export default defineConfig({
         ]
       : []),
   ],
+  // Load .env file from project root (not from client/ directory)
+  envDir: path.resolve(import.meta.dirname),
   resolve: {
     alias: {
       "@": path.resolve(import.meta.dirname, "client", "src"),

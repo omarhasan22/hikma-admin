@@ -1,0 +1,532 @@
+{
+  "info": {
+    "name": "Hikma API - Superadmin",
+    "description": "Superadmin API endpoints for Hikma Medical Booking Platform\n\nFull CRUD access for users, doctors, organizations, services, sliders, and daily tips.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {"key": "baseUrl", "value": "http://localhost:3000", "type": "string"},
+    {"key": "accessToken", "value": "", "type": "string"},
+    {"key": "refreshToken", "value": "", "type": "string"},
+    {"key": "phoneNumber", "value": "+96181195404", "type": "string"},
+    {"key": "otpCode", "value": "", "type": "string"},
+    {"key": "userId", "value": "", "type": "string"},
+    {"key": "doctorId", "value": "", "type": "string"},
+    {"key": "organizationId", "value": "", "type": "string"},
+    {"key": "serviceId", "value": "", "type": "string"},
+    {"key": "sliderId", "value": "", "type": "string"},
+    {"key": "tipId", "value": "", "type": "string"},
+    {"key": "imageId", "value": "", "type": "string"},
+    {"key": "specialtyId", "value": "", "type": "string"}
+  ],
+  "item": [
+    {
+      "name": "🔐 Auth",
+      "description": "Superadmin authentication",
+      "item": [
+        {
+          "name": "Login - Send OTP",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"phone\": \"{{phoneNumber}}\"\n}"},
+            "url": {"raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"]}
+          }
+        },
+        {
+          "name": "Login - Verify OTP",
+          "event": [{"listen": "test", "script": {"exec": ["var jsonData = pm.response.json();", "if (jsonData.data && jsonData.data.accessToken) {", "    pm.collectionVariables.set('accessToken', jsonData.data.accessToken);", "    pm.collectionVariables.set('refreshToken', jsonData.data.refreshToken);", "}"], "type": "text/javascript"}}],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"phone\": \"{{phoneNumber}}\",\n  \"otp\": \"{{otpCode}}\"\n}"},
+            "url": {"raw": "{{baseUrl}}/api/auth/login/verify", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login", "verify"]}
+          }
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"},
+            "url": {"raw": "{{baseUrl}}/api/auth/refresh", "host": ["{{baseUrl}}"], "path": ["api", "auth", "refresh"]}
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "url": {"raw": "{{baseUrl}}/api/auth/logout", "host": ["{{baseUrl}}"], "path": ["api", "auth", "logout"]}
+          }
+        }
+      ]
+    },
+    {
+      "name": "👥 Users Management",
+      "item": [
+        {
+          "name": "List All Users",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "url": {"raw": "{{baseUrl}}/api/users?page=1&limit=20", "host": ["{{baseUrl}}"], "path": ["api", "users"], "query": [{"key": "page", "value": "1"}, {"key": "limit", "value": "20"}]}
+          }
+        },
+        {
+          "name": "Create User Profile",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "body": {"mode": "raw", "raw": "{\n  \"phone\": \"+96170123456\",\n  \"fullName\": \"New User\",\n  \"email\": \"newuser@example.com\",\n  \"userType\": \"patient\"\n}"},
+            "url": {"raw": "{{baseUrl}}/api/users", "host": ["{{baseUrl}}"], "path": ["api", "users"]}
+          }
+        },
+        {
+          "name": "Get User by ID",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "url": {"raw": "{{baseUrl}}/api/users/{{userId}}", "host": ["{{baseUrl}}"], "path": ["api", "users", "{{userId}}"]}
+          }
+        }
+      ]
+    },
+    {
+      "name": "🩺 Doctors Management (Full CRUD)",
+      "description": "Complete CRUD operations for doctors. Superadmin can create, read, update, and delete any doctor.",
+      "item": [
+        {
+          "name": "List All Doctors",
+          "event": [{"listen": "test", "script": {"exec": ["var jsonData = pm.response.json();", "if (jsonData.data && jsonData.data.length > 0) {", "    pm.collectionVariables.set('doctorId', jsonData.data[0].id);", "}"], "type": "text/javascript"}}],
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "url": {"raw": "{{baseUrl}}/api/admin/doctors?limit=50", "host": ["{{baseUrl}}"], "path": ["api", "admin", "doctors"], "query": [{"key": "limit", "value": "50"}]}
+          }
+        },
+        {
+          "name": "List Unapproved Doctors",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "url": {"raw": "{{baseUrl}}/api/admin/doctors?isApproved=false", "host": ["{{baseUrl}}"], "path": ["api", "admin", "doctors"], "query": [{"key": "isApproved", "value": "false"}]}
+          }
+        },
+        {
+          "name": "List VIP Doctors",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "url": {"raw": "{{baseUrl}}/api/admin/doctors?isVip=true", "host": ["{{baseUrl}}"], "path": ["api", "admin", "doctors"], "query": [{"key": "isVip", "value": "true"}]}
+          }
+        },
+        {
+          "name": "Search Doctors",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "url": {"raw": "{{baseUrl}}/api/admin/doctors?search=ahmad", "host": ["{{baseUrl}}"], "path": ["api", "admin", "doctors"], "query": [{"key": "search", "value": "ahmad"}]}
+          }
+        },
+        {
+          "name": "Get Doctor by ID",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "url": {"raw": "{{baseUrl}}/api/doctors/{{doctorId}}", "host": ["{{baseUrl}}"], "path": ["api", "doctors", "{{doctorId}}"]}
+          }
+        },
+        {
+          "name": "Create Doctor",
+          "event": [{"listen": "test", "script": {"exec": ["var jsonData = pm.response.json();", "if (jsonData.data && jsonData.data.doctor && jsonData.data.doctor.id) {", "    pm.collectionVariables.set('doctorId', jsonData.data.doctor.id);", "}"], "type": "text/javascript"}}],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "body": {"mode": "raw", "raw": "{\n  \"phone\": \"+96170999888\",\n  \"fullName\": \"Dr. New Doctor\",\n  \"email\": \"newdoctor@example.com\",\n  \"specialtyId\": \"{{specialtyId}}\",\n  \"licenseNumber\": \"LIC123456\",\n  \"experienceYears\": 5,\n  \"bio\": \"Experienced physician with expertise in general medicine\",\n  \"address\": \"123 Medical Center, Beirut\",\n  \"latitude\": 33.8938,\n  \"longitude\": 35.5018,\n  \"whatsapp\": \"+96170999888\",\n  \"isApproved\": true\n}"},
+            "url": {"raw": "{{baseUrl}}/api/admin/doctors", "host": ["{{baseUrl}}"], "path": ["api", "admin", "doctors"]}
+          }
+        },
+        {
+          "name": "Update Doctor",
+          "request": {
+            "method": "PUT",
+            "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "body": {"mode": "raw", "raw": "{\n  \"fullName\": \"Dr. Updated Name\",\n  \"experienceYears\": 10,\n  \"bio\": \"Updated bio with more experience\",\n  \"address\": \"456 New Medical Center, Beirut\",\n  \"isApproved\": true,\n  \"isVip\": true,\n  \"vipExpiresAt\": \"2026-12-31T00:00:00Z\"\n}"},
+            "url": {"raw": "{{baseUrl}}/api/admin/doctors/{{doctorId}}", "host": ["{{baseUrl}}"], "path": ["api", "admin", "doctors", "{{doctorId}}"]}
+          }
+        },
+        {
+          "name": "Approve Doctor",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "url": {"raw": "{{baseUrl}}/api/admin/doctors/{{doctorId}}/approve", "host": ["{{baseUrl}}"], "path": ["api", "admin", "doctors", "{{doctorId}}", "approve"]}
+          }
+        },
+        {
+          "name": "Reject Doctor",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "body": {"mode": "raw", "raw": "{\n  \"reason\": \"Incomplete documentation - missing license verification\"\n}"},
+            "url": {"raw": "{{baseUrl}}/api/admin/doctors/{{doctorId}}/reject", "host": ["{{baseUrl}}"], "path": ["api", "admin", "doctors", "{{doctorId}}", "reject"]}
+          }
+        },
+        {
+          "name": "Set VIP Status",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "body": {"mode": "raw", "raw": "{\n  \"isVip\": true,\n  \"expiresAt\": \"2026-12-31\"\n}"},
+            "url": {"raw": "{{baseUrl}}/api/admin/doctors/{{doctorId}}/vip", "host": ["{{baseUrl}}"], "path": ["api", "admin", "doctors", "{{doctorId}}", "vip"]}
+          }
+        },
+        {
+          "name": "Remove VIP Status",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "body": {"mode": "raw", "raw": "{\n  \"isVip\": false,\n  \"expiresAt\": null\n}"},
+            "url": {"raw": "{{baseUrl}}/api/admin/doctors/{{doctorId}}/vip", "host": ["{{baseUrl}}"], "path": ["api", "admin", "doctors", "{{doctorId}}", "vip"]}
+          }
+        },
+        {
+          "name": "Delete Doctor",
+          "request": {
+            "method": "DELETE",
+            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "url": {"raw": "{{baseUrl}}/api/admin/doctors/{{doctorId}}", "host": ["{{baseUrl}}"], "path": ["api", "admin", "doctors", "{{doctorId}}"]}
+          }
+        }
+      ]
+    },
+    {
+      "name": "🏢 Organizations Management (Full CRUD)",
+      "description": "Complete CRUD operations for organizations. Superadmin can create, read, update, and delete any organization.",
+      "item": [
+        {
+          "name": "List All Organizations",
+          "event": [{"listen": "test", "script": {"exec": ["var jsonData = pm.response.json();", "if (jsonData.data && jsonData.data.length > 0) {", "    pm.collectionVariables.set('organizationId', jsonData.data[0].id);", "}"], "type": "text/javascript"}}],
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "url": {"raw": "{{baseUrl}}/api/admin/organizations?limit=50", "host": ["{{baseUrl}}"], "path": ["api", "admin", "organizations"], "query": [{"key": "limit", "value": "50"}]}
+          }
+        },
+        {
+          "name": "List Pending Organizations",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "url": {"raw": "{{baseUrl}}/api/admin/organizations?status=pending", "host": ["{{baseUrl}}"], "path": ["api", "admin", "organizations"], "query": [{"key": "status", "value": "pending"}]}
+          }
+        },
+        {
+          "name": "List Approved Organizations",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "url": {"raw": "{{baseUrl}}/api/admin/organizations?status=approved", "host": ["{{baseUrl}}"], "path": ["api", "admin", "organizations"], "query": [{"key": "status", "value": "approved"}]}
+          }
+        },
+        {
+          "name": "List Suspended Organizations",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "url": {"raw": "{{baseUrl}}/api/admin/organizations?status=suspended", "host": ["{{baseUrl}}"], "path": ["api", "admin", "organizations"], "query": [{"key": "status", "value": "suspended"}]}
+          }
+        },
+        {
+          "name": "Search Organizations",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "url": {"raw": "{{baseUrl}}/api/admin/organizations?search=clinic", "host": ["{{baseUrl}}"], "path": ["api", "admin", "organizations"], "query": [{"key": "search", "value": "clinic"}]}
+          }
+        },
+        {
+          "name": "Get Organization by ID",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "url": {"raw": "{{baseUrl}}/api/organizations/{{organizationId}}", "host": ["{{baseUrl}}"], "path": ["api", "organizations", "{{organizationId}}"]}
+          }
+        },
+        {
+          "name": "Create Organization",
+          "event": [{"listen": "test", "script": {"exec": ["var jsonData = pm.response.json();", "if (jsonData.data && jsonData.data.organization && jsonData.data.organization.id) {", "    pm.collectionVariables.set('organizationId', jsonData.data.organization.id);", "}"], "type": "text/javascript"}}],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "body": {"mode": "raw", "raw": "{\n  \"name\": \"New Medical Center\",\n  \"description\": \"A state-of-the-art medical facility\",\n  \"phone\": \"+96171234567\",\n  \"email\": \"info@newmedical.com\",\n  \"website\": \"https://newmedical.com\",\n  \"address\": \"789 Healthcare Ave, Beirut\",\n  \"latitude\": 33.8886,\n  \"longitude\": 35.4955,\n  \"timezone\": \"Asia/Beirut\"\n}"},
+            "url": {"raw": "{{baseUrl}}/api/organizations", "host": ["{{baseUrl}}"], "path": ["api", "organizations"]}
+          }
+        },
+        {
+          "name": "Update Organization",
+          "request": {
+            "method": "PUT",
+            "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "body": {"mode": "raw", "raw": "{\n  \"name\": \"Updated Medical Center\",\n  \"description\": \"Updated description for the medical center\",\n  \"phone\": \"+96171234568\",\n  \"email\": \"updated@newmedical.com\",\n  \"website\": \"https://updated-medical.com\",\n  \"address\": \"Updated Address, Beirut\"\n}"},
+            "url": {"raw": "{{baseUrl}}/api/admin/organizations/{{organizationId}}", "host": ["{{baseUrl}}"], "path": ["api", "admin", "organizations", "{{organizationId}}"]}
+          }
+        },
+        {
+          "name": "Approve Organization",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "url": {"raw": "{{baseUrl}}/api/admin/organizations/{{organizationId}}/approve", "host": ["{{baseUrl}}"], "path": ["api", "admin", "organizations", "{{organizationId}}", "approve"]}
+          }
+        },
+        {
+          "name": "Reject Organization",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "body": {"mode": "raw", "raw": "{\n  \"reason\": \"Missing required documents - please submit business license\"\n}"},
+            "url": {"raw": "{{baseUrl}}/api/admin/organizations/{{organizationId}}/reject", "host": ["{{baseUrl}}"], "path": ["api", "admin", "organizations", "{{organizationId}}", "reject"]}
+          }
+        },
+        {
+          "name": "Suspend Organization",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "body": {"mode": "raw", "raw": "{\n  \"reason\": \"Policy violation - multiple patient complaints\"\n}"},
+            "url": {"raw": "{{baseUrl}}/api/admin/organizations/{{organizationId}}/suspend", "host": ["{{baseUrl}}"], "path": ["api", "admin", "organizations", "{{organizationId}}", "suspend"]}
+          }
+        },
+        {
+          "name": "Delete Organization",
+          "request": {
+            "method": "DELETE",
+            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "url": {"raw": "{{baseUrl}}/api/admin/organizations/{{organizationId}}", "host": ["{{baseUrl}}"], "path": ["api", "admin", "organizations", "{{organizationId}}"]}
+          }
+        }
+      ]
+    },
+    {
+      "name": "🏥 Specialties Management",
+      "item": [
+        {
+          "name": "List Specialties",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "url": {"raw": "{{baseUrl}}/api/services", "host": ["{{baseUrl}}"], "path": ["api", "services"]}
+          }
+        },
+        {
+          "name": "Create Specialty",
+          "event": [{"listen": "test", "script": {"exec": ["var jsonData = pm.response.json();", "if (jsonData.data && jsonData.data.id) {", "    pm.collectionVariables.set('specialtyId', jsonData.data.id);", "}"], "type": "text/javascript"}}],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "body": {"mode": "raw", "raw": "{\n  \"name\": \"Cardiology\",\n  \"description\": \"Heart and cardiovascular system specialists\"\n}"},
+            "url": {"raw": "{{baseUrl}}/api/services", "host": ["{{baseUrl}}"], "path": ["api", "services"]}
+          }
+        },
+        {
+          "name": "Update Specialty",
+          "request": {
+            "method": "PUT",
+            "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "body": {"mode": "raw", "raw": "{\n  \"name\": \"Cardiology Updated\",\n  \"description\": \"Updated description\"\n}"},
+            "url": {"raw": "{{baseUrl}}/api/services/{{specialtyId}}", "host": ["{{baseUrl}}"], "path": ["api", "services", "{{specialtyId}}"]}
+          }
+        },
+        {
+          "name": "Delete Specialty",
+          "request": {
+            "method": "DELETE",
+            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "url": {"raw": "{{baseUrl}}/api/services/{{specialtyId}}", "host": ["{{baseUrl}}"], "path": ["api", "services", "{{specialtyId}}"]}
+          }
+        }
+      ]
+    },
+    {
+      "name": "🖼️ Service Images Management",
+      "item": [
+        {
+          "name": "List Service Images",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "url": {"raw": "{{baseUrl}}/api/service-images", "host": ["{{baseUrl}}"], "path": ["api", "service-images"]}
+          }
+        },
+        {
+          "name": "Create Service Image",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "body": {"mode": "raw", "raw": "{\n  \"serviceId\": \"{{serviceId}}\",\n  \"imageUrl\": \"https://example.com/image.jpg\",\n  \"altText\": \"Service image\",\n  \"displayOrder\": 1\n}"},
+            "url": {"raw": "{{baseUrl}}/api/service-images", "host": ["{{baseUrl}}"], "path": ["api", "service-images"]}
+          }
+        },
+        {
+          "name": "Bulk Create Service Images",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "body": {"mode": "raw", "raw": "{\n  \"images\": [\n    {\"serviceId\": \"{{serviceId}}\", \"imageUrl\": \"https://example.com/image1.jpg\", \"displayOrder\": 1},\n    {\"serviceId\": \"{{serviceId}}\", \"imageUrl\": \"https://example.com/image2.jpg\", \"displayOrder\": 2}\n  ]\n}"},
+            "url": {"raw": "{{baseUrl}}/api/service-images/bulk", "host": ["{{baseUrl}}"], "path": ["api", "service-images", "bulk"]}
+          }
+        },
+        {
+          "name": "Update Service Image",
+          "request": {
+            "method": "PUT",
+            "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "body": {"mode": "raw", "raw": "{\n  \"altText\": \"Updated alt text\",\n  \"displayOrder\": 2\n}"},
+            "url": {"raw": "{{baseUrl}}/api/service-images/{{imageId}}", "host": ["{{baseUrl}}"], "path": ["api", "service-images", "{{imageId}}"]}
+          }
+        },
+        {
+          "name": "Delete Service Image",
+          "request": {
+            "method": "DELETE",
+            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "url": {"raw": "{{baseUrl}}/api/service-images/{{imageId}}", "host": ["{{baseUrl}}"], "path": ["api", "service-images", "{{imageId}}"]}
+          }
+        }
+      ]
+    },
+    {
+      "name": "🎠 Sliders Management",
+      "item": [
+        {
+          "name": "List All Sliders",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "url": {"raw": "{{baseUrl}}/api/sliders/admin/all", "host": ["{{baseUrl}}"], "path": ["api", "sliders", "admin", "all"]}
+          }
+        },
+        {
+          "name": "Get Slider by ID",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "url": {"raw": "{{baseUrl}}/api/sliders/{{sliderId}}", "host": ["{{baseUrl}}"], "path": ["api", "sliders", "{{sliderId}}"]}
+          }
+        },
+        {
+          "name": "Create Slider",
+          "event": [{"listen": "test", "script": {"exec": ["var jsonData = pm.response.json();", "if (jsonData.data && jsonData.data.id) {", "    pm.collectionVariables.set('sliderId', jsonData.data.id);", "}"], "type": "text/javascript"}}],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "body": {"mode": "raw", "raw": "{\n  \"title\": \"Welcome to Hikma\",\n  \"description\": \"Your trusted medical booking platform\",\n  \"imageUrl\": \"https://example.com/slider1.jpg\",\n  \"overlayColor\": \"#4A90E2\",\n  \"displayOrder\": 1,\n  \"isActive\": true\n}"},
+            "url": {"raw": "{{baseUrl}}/api/sliders", "host": ["{{baseUrl}}"], "path": ["api", "sliders"]}
+          }
+        },
+        {
+          "name": "Update Slider",
+          "request": {
+            "method": "PUT",
+            "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "body": {"mode": "raw", "raw": "{\n  \"title\": \"Updated Title\",\n  \"isActive\": true\n}"},
+            "url": {"raw": "{{baseUrl}}/api/sliders/{{sliderId}}", "host": ["{{baseUrl}}"], "path": ["api", "sliders", "{{sliderId}}"]}
+          }
+        },
+        {
+          "name": "Delete Slider",
+          "request": {
+            "method": "DELETE",
+            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "url": {"raw": "{{baseUrl}}/api/sliders/{{sliderId}}", "host": ["{{baseUrl}}"], "path": ["api", "sliders", "{{sliderId}}"]}
+          }
+        }
+      ]
+    },
+    {
+      "name": "💡 Daily Tips Management",
+      "item": [
+        {
+          "name": "List All Daily Tips",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "url": {"raw": "{{baseUrl}}/api/daily-tips/admin/all", "host": ["{{baseUrl}}"], "path": ["api", "daily-tips", "admin", "all"]}
+          }
+        },
+        {
+          "name": "Get Daily Tip by ID",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "url": {"raw": "{{baseUrl}}/api/daily-tips/{{tipId}}", "host": ["{{baseUrl}}"], "path": ["api", "daily-tips", "{{tipId}}"]}
+          }
+        },
+        {
+          "name": "Create Daily Tip",
+          "event": [{"listen": "test", "script": {"exec": ["var jsonData = pm.response.json();", "if (jsonData.data && jsonData.data.id) {", "    pm.collectionVariables.set('tipId', jsonData.data.id);", "}"], "type": "text/javascript"}}],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "body": {"mode": "raw", "raw": "{\n  \"title\": \"Stay Hydrated\",\n  \"description\": \"Drink at least 8 glasses of water daily to maintain good health.\",\n  \"image\": \"https://example.com/tip-image.jpg\",\n  \"isActive\": true\n}"},
+            "url": {"raw": "{{baseUrl}}/api/daily-tips", "host": ["{{baseUrl}}"], "path": ["api", "daily-tips"]}
+          }
+        },
+        {
+          "name": "Update Daily Tip",
+          "request": {
+            "method": "PUT",
+            "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "body": {"mode": "raw", "raw": "{\n  \"title\": \"Updated Tip Title\",\n  \"isActive\": true\n}"},
+            "url": {"raw": "{{baseUrl}}/api/daily-tips/{{tipId}}", "host": ["{{baseUrl}}"], "path": ["api", "daily-tips", "{{tipId}}"]}
+          }
+        },
+        {
+          "name": "Delete Daily Tip",
+          "request": {
+            "method": "DELETE",
+            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "url": {"raw": "{{baseUrl}}/api/daily-tips/{{tipId}}", "host": ["{{baseUrl}}"], "path": ["api", "daily-tips", "{{tipId}}"]}
+          }
+        }
+      ]
+    },
+    {
+      "name": "⭐ Reviews Management",
+      "item": [
+        {
+          "name": "Hide Review",
+          "request": {
+            "method": "PATCH",
+            "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "body": {"mode": "raw", "raw": "{\n  \"isHidden\": true\n}"},
+            "url": {"raw": "{{baseUrl}}/api/reviews/{{reviewId}}/visibility", "host": ["{{baseUrl}}"], "path": ["api", "reviews", "{{reviewId}}", "visibility"]}
+          }
+        },
+        {
+          "name": "Show Review",
+          "request": {
+            "method": "PATCH",
+            "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "body": {"mode": "raw", "raw": "{\n  \"isHidden\": false\n}"},
+            "url": {"raw": "{{baseUrl}}/api/reviews/{{reviewId}}/visibility", "host": ["{{baseUrl}}"], "path": ["api", "reviews", "{{reviewId}}", "visibility"]}
+          }
+        }
+      ]
+    },
+    {
+      "name": "💚 Health",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "url": {"raw": "{{baseUrl}}/api/health", "host": ["{{baseUrl}}"], "path": ["api", "health"]}
+          }
+        }
+      ]
+    }
+  ]
+}

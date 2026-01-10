@@ -9,7 +9,9 @@ import {
   Settings, 
   LogOut,
   Image,
-  Sparkles
+  Sparkles,
+  MessageSquare,
+  Lightbulb
 } from "lucide-react";
 
 const NAV_ITEMS = [
@@ -17,8 +19,10 @@ const NAV_ITEMS = [
   { label: "Doctors", href: "/doctors", icon: Stethoscope },
   { label: "Organizations", href: "/organizations", icon: Building2 },
   { label: "Users", href: "/users", icon: Users },
-  { label: "Content", href: "/content", icon: Image },
-  { label: "Services", href: "/services", icon: Sparkles },
+  { label: "Specialties", href: "/specialties", icon: Sparkles },
+  { label: "Sliders", href: "/content/sliders", icon: Image },
+  { label: "Daily Tips", href: "/content/tips", icon: Lightbulb },
+  { label: "Reviews", href: "/reviews", icon: MessageSquare },
   { label: "Settings", href: "/settings", icon: Settings },
 ];
 

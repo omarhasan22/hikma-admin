@@ -7,13 +7,13 @@ import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/Dashboard";
 import Login from "@/pages/Login";
 import DoctorsPage from "@/pages/Doctors";
-
-// Placeholder components for routes not fully implemented yet
-// In a real app these would be full pages like DoctorsPage
-const OrganizationsPage = () => <div className="p-8">Organizations Page (Coming Soon)</div>;
-const UsersPage = () => <div className="p-8">Users Page (Coming Soon)</div>;
-const ContentPage = () => <div className="p-8">Content Management (Coming Soon)</div>;
-const ServicesPage = () => <div className="p-8">Services (Coming Soon)</div>;
+import DoctorDetailPage from "@/pages/DoctorDetail";
+import OrganizationsPage from "@/pages/Organizations";
+import UsersPage from "@/pages/Users";
+import SpecialtiesPage from "@/pages/Specialties";
+import SlidersPage from "@/pages/Sliders";
+import DailyTipsPage from "@/pages/DailyTips";
+import ReviewsPage from "@/pages/Reviews";
 const SettingsPage = () => <div className="p-8">Settings (Coming Soon)</div>;
 
 function Router() {
@@ -22,10 +22,14 @@ function Router() {
       <Route path="/login" component={Login} />
       <Route path="/" component={Dashboard} />
       <Route path="/doctors" component={DoctorsPage} />
+      <Route path="/doctors/:doctorId" component={DoctorDetailPage} />
       <Route path="/organizations" component={OrganizationsPage} />
       <Route path="/users" component={UsersPage} />
-      <Route path="/content" component={ContentPage} />
-      <Route path="/services" component={ServicesPage} />
+      <Route path="/specialties" component={SpecialtiesPage} />
+      <Route path="/content/sliders" component={SlidersPage} />
+      <Route path="/content/tips" component={DailyTipsPage} />
+      <Route path="/content" component={SlidersPage} />
+      <Route path="/reviews" component={ReviewsPage} />
       <Route path="/settings" component={SettingsPage} />
       
       {/* Fallback to 404 */}
