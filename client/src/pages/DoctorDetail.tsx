@@ -2,11 +2,12 @@ import { useRoute } from "wouter";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useDoctor } from "@/hooks/use-doctors";
 import { useDoctorAnalytics, useDoctorProfileViews } from "@/hooks/use-doctor-analytics";
-import { Loader2, ArrowLeft, User, Phone, Mail, MapPin, Calendar, Eye, Users, Star, CheckCircle, XCircle, Clock } from "lucide-react";
+import { Loader2, ArrowLeft, User, Phone, Mail, MapPin, Calendar, Eye, Users, Star, CheckCircle, XCircle, Clock, Award, FileText, MessageCircle, Stethoscope, Globe, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from "date-fns";
 
 export default function DoctorDetailPage() {

@@ -181,6 +181,7 @@ function SpecialtyForm({
   const [name, setName] = useState(service?.name || "");
   const [nameAr, setNameAr] = useState(service?.name_ar || service?.nameAr || "");
   const [description, setDescription] = useState(service?.description || "");
+  const [descriptionAr, setDescriptionAr] = useState(service?.description_ar || service?.descriptionAr || "");
   const [isActive, setIsActive] = useState(service?.is_active !== undefined ? service.is_active : (service?.isActive !== undefined ? service.isActive : true));
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(
@@ -198,6 +199,7 @@ function SpecialtyForm({
       setName(service.name || "");
       setNameAr(service.name_ar || service.nameAr || "");
       setDescription(service.description || "");
+      setDescriptionAr(service.description_ar || service.descriptionAr || "");
       setIsActive(service.is_active !== undefined ? service.is_active : (service.isActive !== undefined ? service.isActive : true));
       setImagePreview(service.icon || service.image || service.image_url || null);
       setImageFile(null); // Reset file input when switching between services
@@ -206,6 +208,7 @@ function SpecialtyForm({
       setName("");
       setNameAr("");
       setDescription("");
+      setDescriptionAr("");
       setIsActive(true);
       setImagePreview(null);
       setImageFile(null);
@@ -226,8 +229,9 @@ function SpecialtyForm({
     
     const formData = new FormData();
     formData.append("name", name);
-    if (nameAr) formData.append("nameAr", nameAr);
+    formData.append("name_ar", nameAr || ""); // Always send, even if empty
     if (description) formData.append("description", description);
+    formData.append("description_ar", descriptionAr || ""); // Always send, even if empty
     formData.append("isActive", String(isActive));
     if (imageFile) {
       formData.append("image", imageFile);
@@ -260,13 +264,26 @@ function SpecialtyForm({
       </div>
 
       <div>
-        <Label htmlFor="description">Description</Label>
+        <Label htmlFor="description">Description (English)</Label>
         <Textarea 
           id="description"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           maxLength={1000}
-          rows={4}
+          rows={3}
+        />
+      </div>
+
+      <div>
+        <Label htmlFor="descriptionAr">Description (Arabic)</Label>
+        <Textarea 
+          id="descriptionAr"
+          value={descriptionAr}
+          onChange={(e) => setDescriptionAr(e.target.value)}
+          maxLength={1000}
+          rows={3}
+          dir="rtl"
+          placeholder="الوصف بالعربية"
         />
       </div>
 

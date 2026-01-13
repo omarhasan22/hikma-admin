@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useDailyTipsAll, useCreateDailyTip, useUpdateDailyTip, useDeleteDailyTip } from "@/hooks/use-daily-tips";
 import { Input } from "@/components/ui/input";
@@ -128,7 +128,7 @@ export default function DailyTipsPage() {
                     </TableCell>
                     <TableCell className="text-right pr-6">
                       <div className="flex items-center justify-end gap-2">
-                        <Dialog>
+                        <Dialog key={tip.id}>
                           <DialogTrigger asChild>
                             <Button 
                               size="sm" 
@@ -143,6 +143,7 @@ export default function DailyTipsPage() {
                               <DialogTitle>Edit Daily Tip</DialogTitle>
                             </DialogHeader>
                             <TipForm 
+                              key={tip.id}
                               tip={tip}
                               onSubmit={(data) => {
                                 updateMutation.mutate({
@@ -194,16 +195,40 @@ function TipForm({
   isLoading: boolean;
 }) {
   const [title, setTitle] = useState(tip?.title || "");
+  const [titleAr, setTitleAr] = useState(tip?.title_ar || tip?.titleAr || "");
   const [description, setDescription] = useState(tip?.description || "");
+  const [descriptionAr, setDescriptionAr] = useState(tip?.description_ar || tip?.descriptionAr || "");
   const [isActive, setIsActive] = useState(tip?.is_active !== undefined ? tip.is_active : (tip?.isActive !== undefined ? tip.isActive : false));
   const [imageFile, setImageFile] = useState<File | null>(null);
+
+  // Update form fields when tip prop changes
+  useEffect(() => {
+    if (tip) {
+      setTitle(tip.title || "");
+      setTitleAr(tip.title_ar || tip.titleAr || "");
+      setDescription(tip.description || "");
+      setDescriptionAr(tip.description_ar || tip.descriptionAr || "");
+      setIsActive(tip.is_active !== undefined ? tip.is_active : (tip.isActive !== undefined ? tip.isActive : false));
+      setImageFile(null); // Reset file input when switching between tips
+    } else {
+      // Reset form for new tip
+      setTitle("");
+      setTitleAr("");
+      setDescription("");
+      setDescriptionAr("");
+      setIsActive(false);
+      setImageFile(null);
+    }
+  }, [tip]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
     const formData = new FormData();
     formData.append("title", title);
+    formData.append("title_ar", titleAr || ""); // Always send, even if empty
     formData.append("description", description);
+    formData.append("description_ar", descriptionAr || ""); // Always send, even if empty
     formData.append("isActive", String(isActive));
     if (imageFile) {
       formData.append("image", imageFile);
@@ -215,7 +240,7 @@ function TipForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-4 pt-4">
       <div>
-        <Label htmlFor="title">Title *</Label>
+        <Label htmlFor="title">Title (English) *</Label>
         <Input 
           id="title"
           value={title}
@@ -226,13 +251,38 @@ function TipForm({
       </div>
 
       <div>
-        <Label htmlFor="description">Description</Label>
+        <Label htmlFor="titleAr">Title (Arabic)</Label>
+        <Input 
+          id="titleAr"
+          value={titleAr}
+          onChange={(e) => setTitleAr(e.target.value)}
+          maxLength={200}
+          dir="rtl"
+          placeholder="العنوان بالعربية"
+        />
+      </div>
+
+      <div>
+        <Label htmlFor="description">Description (English)</Label>
         <Textarea 
           id="description"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           maxLength={2000}
-          rows={6}
+          rows={4}
+        />
+      </div>
+
+      <div>
+        <Label htmlFor="descriptionAr">Description (Arabic)</Label>
+        <Textarea 
+          id="descriptionAr"
+          value={descriptionAr}
+          onChange={(e) => setDescriptionAr(e.target.value)}
+          maxLength={2000}
+          rows={4}
+          dir="rtl"
+          placeholder="الوصف بالعربية"
         />
       </div>
 

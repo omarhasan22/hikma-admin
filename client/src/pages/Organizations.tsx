@@ -315,12 +315,15 @@ function ClinicForm({
   isLoading: boolean;
 }) {
   const [name, setName] = useState("");
+  const [nameAr, setNameAr] = useState("");
   const [ownerId, setOwnerId] = useState("");
   const [description, setDescription] = useState("");
+  const [descriptionAr, setDescriptionAr] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [website, setWebsite] = useState("");
   const [address, setAddress] = useState("");
+  const [addressAr, setAddressAr] = useState("");
   const [latitude, setLatitude] = useState("");
   const [longitude, setLongitude] = useState("");
   const [timezone, setTimezone] = useState("Asia/Beirut");
@@ -333,11 +336,14 @@ function ClinicForm({
       ownerId,
     };
 
+    if (nameAr) formData.name_ar = nameAr;
     if (description) formData.description = description;
+    if (descriptionAr) formData.description_ar = descriptionAr;
     if (phone) formData.phone = phone;
     if (email) formData.email = email;
     if (website) formData.website = website;
     if (address) formData.address = address;
+    if (addressAr) formData.address_ar = addressAr;
     if (timezone) formData.timezone = timezone;
     if (latitude) formData.latitude = parseFloat(latitude);
     if (longitude) formData.longitude = parseFloat(longitude);
@@ -348,13 +354,24 @@ function ClinicForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-4 pt-4">
       <div>
-        <Label htmlFor="name">Clinic Name *</Label>
+        <Label htmlFor="name">Clinic Name (English) *</Label>
         <Input 
           id="name"
           value={name}
           onChange={(e) => setName(e.target.value)}
           required
           placeholder="Hikma Medical Center"
+        />
+      </div>
+
+      <div>
+        <Label htmlFor="nameAr">Clinic Name (Arabic)</Label>
+        <Input 
+          id="nameAr"
+          value={nameAr}
+          onChange={(e) => setNameAr(e.target.value)}
+          dir="rtl"
+          placeholder="مركز حكمة الطبي"
         />
       </div>
 
@@ -383,13 +400,25 @@ function ClinicForm({
       </div>
 
       <div>
-        <Label htmlFor="description">Description</Label>
+        <Label htmlFor="description">Description (English)</Label>
         <Textarea 
           id="description"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           placeholder="Clinic description..."
-          rows={3}
+          rows={2}
+        />
+      </div>
+
+      <div>
+        <Label htmlFor="descriptionAr">Description (Arabic)</Label>
+        <Textarea 
+          id="descriptionAr"
+          value={descriptionAr}
+          onChange={(e) => setDescriptionAr(e.target.value)}
+          placeholder="وصف العيادة..."
+          rows={2}
+          dir="rtl"
         />
       </div>
 
@@ -429,12 +458,23 @@ function ClinicForm({
       </div>
 
       <div>
-        <Label htmlFor="address">Address</Label>
+        <Label htmlFor="address">Address (English)</Label>
         <Input 
           id="address"
           value={address}
           onChange={(e) => setAddress(e.target.value)}
           placeholder="Street address..."
+        />
+      </div>
+
+      <div>
+        <Label htmlFor="addressAr">Address (Arabic)</Label>
+        <Input 
+          id="addressAr"
+          value={addressAr}
+          onChange={(e) => setAddressAr(e.target.value)}
+          placeholder="العنوان..."
+          dir="rtl"
         />
       </div>
 

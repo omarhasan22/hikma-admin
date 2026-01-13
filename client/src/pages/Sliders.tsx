@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useSlidersAll, useCreateSlider, useUpdateSlider, useDeleteSlider } from "@/hooks/use-sliders";
 import { Input } from "@/components/ui/input";
@@ -126,7 +126,7 @@ export default function SlidersPage() {
                     </TableCell>
                     <TableCell className="text-right pr-6">
                       <div className="flex items-center justify-end gap-2">
-                        <Dialog>
+                        <Dialog key={slider.id}>
                           <DialogTrigger asChild>
                             <Button 
                               size="sm" 
@@ -140,18 +140,19 @@ export default function SlidersPage() {
                             <DialogHeader>
                               <DialogTitle>Edit Slider</DialogTitle>
                             </DialogHeader>
-            <SliderForm 
-              slider={slider}
-              onSubmit={(data) => {
-                updateMutation.mutate({
-                  sliderId: String(slider.id),
-                  data: data
-                }, {
-                  onSuccess: () => setEditingSlider(null)
-                });
-              }}
-              isLoading={updateMutation.isPending}
-            />
+                            <SliderForm 
+                              key={slider.id}
+                              slider={slider}
+                              onSubmit={(data) => {
+                                updateMutation.mutate({
+                                  sliderId: String(slider.id),
+                                  data: data
+                                }, {
+                                  onSuccess: () => setEditingSlider(null)
+                                });
+                              }}
+                              isLoading={updateMutation.isPending}
+                            />
                           </DialogContent>
                         </Dialog>
                         <Button 
@@ -192,18 +193,46 @@ function SliderForm({
   isLoading: boolean;
 }) {
   const [title, setTitle] = useState(slider?.title || "");
+  const [titleAr, setTitleAr] = useState(slider?.title_ar || slider?.titleAr || "");
   const [description, setDescription] = useState(slider?.description || "");
+  const [descriptionAr, setDescriptionAr] = useState(slider?.description_ar || slider?.descriptionAr || "");
   const [overlayColor, setOverlayColor] = useState(slider?.overlay_color || slider?.overlayColor || "#4A90E2");
   const [displayOrder, setDisplayOrder] = useState(slider?.display_order || slider?.displayOrder || 0);
   const [isActive, setIsActive] = useState(slider?.is_active !== undefined ? slider.is_active : (slider?.isActive !== undefined ? slider.isActive : true));
   const [imageFile, setImageFile] = useState<File | null>(null);
+
+  // Update form fields when slider prop changes
+  useEffect(() => {
+    if (slider) {
+      setTitle(slider.title || "");
+      setTitleAr(slider.title_ar || slider.titleAr || "");
+      setDescription(slider.description || "");
+      setDescriptionAr(slider.description_ar || slider.descriptionAr || "");
+      setOverlayColor(slider.overlay_color || slider.overlayColor || "#4A90E2");
+      setDisplayOrder(slider.display_order || slider.displayOrder || 0);
+      setIsActive(slider.is_active !== undefined ? slider.is_active : (slider.isActive !== undefined ? slider.isActive : true));
+      setImageFile(null); // Reset file input when switching between sliders
+    } else {
+      // Reset form for new slider
+      setTitle("");
+      setTitleAr("");
+      setDescription("");
+      setDescriptionAr("");
+      setOverlayColor("#4A90E2");
+      setDisplayOrder(0);
+      setIsActive(true);
+      setImageFile(null);
+    }
+  }, [slider]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
     const formData = new FormData();
     formData.append("title", title);
+    formData.append("title_ar", titleAr || ""); // Always send, even if empty
     formData.append("description", description);
+    formData.append("description_ar", descriptionAr || ""); // Always send, even if empty
     formData.append("overlayColor", overlayColor);
     formData.append("displayOrder", String(displayOrder));
     formData.append("isActive", String(isActive));
@@ -217,7 +246,7 @@ function SliderForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-4 pt-4">
       <div>
-        <Label htmlFor="title">Title *</Label>
+        <Label htmlFor="title">Title (English) *</Label>
         <Input 
           id="title"
           value={title}
@@ -228,13 +257,38 @@ function SliderForm({
       </div>
 
       <div>
-        <Label htmlFor="description">Description</Label>
+        <Label htmlFor="titleAr">Title (Arabic)</Label>
+        <Input 
+          id="titleAr"
+          value={titleAr}
+          onChange={(e) => setTitleAr(e.target.value)}
+          maxLength={200}
+          dir="rtl"
+          placeholder="العنوان بالعربية"
+        />
+      </div>
+
+      <div>
+        <Label htmlFor="description">Description (English)</Label>
         <Textarea 
           id="description"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           maxLength={1000}
-          rows={4}
+          rows={3}
+        />
+      </div>
+
+      <div>
+        <Label htmlFor="descriptionAr">Description (Arabic)</Label>
+        <Textarea 
+          id="descriptionAr"
+          value={descriptionAr}
+          onChange={(e) => setDescriptionAr(e.target.value)}
+          maxLength={1000}
+          rows={3}
+          dir="rtl"
+          placeholder="الوصف بالعربية"
         />
       </div>
 
