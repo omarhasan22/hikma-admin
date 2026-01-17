@@ -413,6 +413,27 @@ export const api = {
         }),
       },
     },
+    addDoctor: {
+      method: 'POST' as const,
+      path: '/api/clinics/:clinicId/doctors',
+      input: z.object({
+        doctorId: z.string().uuid(),
+        role: z.enum(['admin', 'member']).default('member')
+      }),
+      responses: {
+        201: z.object({
+          status: z.string(),
+          error: z.string(),
+          errorCode: z.string(),
+          result: z.object({
+            message: z.string(),
+            membership: z.any()
+          })
+        }),
+        400: errorSchemas.validation,
+        401: errorSchemas.unauthorized,
+      },
+    },
   },
   dashboard: {
     stats: {

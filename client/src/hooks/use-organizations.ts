@@ -174,3 +174,26 @@ export function useDeleteOrganization() {
    });
 }
 
+export function useAddDoctorToClinic() {
+   const queryClient = useQueryClient();
+   const token = useAuthStore(state => state.token);
+   const { toast } = useToast();
+
+   return useMutation({
+      mutationFn: async ({ clinicId, doctorId, role = 'member' }: { clinicId: string; doctorId: string; role?: 'admin' | 'member' }) => {
+         const url = buildUrl(api.organizations.addDoctor.path, { clinicId });
+         const res = await apiFetch(url, {
+            method: api.organizations.addDoctor.method,
+            token,
+            body: api.organizations.addDoctor.input.parse({ doctorId, role }),
+         });
+         return api.organizations.addDoctor.responses[201].parse(await res.json());
+      },
+      onSuccess: () => {
+         queryClient.invalidateQueries({ queryKey: [api.organizations.list.path] });
+         toast({ title: "Success", description: "Doctor added to clinic successfully" });
+      },
+      onError: (err) => toast({ variant: "destructive", title: "Error", description: err.message })
+   });
+}
+

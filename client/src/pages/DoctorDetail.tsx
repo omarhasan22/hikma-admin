@@ -1,22 +1,44 @@
+import { useState } from "react";
 import { useRoute } from "wouter";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useDoctor } from "@/hooks/use-doctors";
 import { useDoctorAnalytics, useDoctorProfileViews } from "@/hooks/use-doctor-analytics";
+import { useOrganizations, useAddDoctorToClinic } from "@/hooks/use-organizations";
 import { Loader2, ArrowLeft, User, Phone, Mail, MapPin, Calendar, Eye, Users, Star, CheckCircle, XCircle, Clock, Award, FileText, MessageCircle, Stethoscope, Globe, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 import { format } from "date-fns";
 
 export default function DoctorDetailPage() {
   const [match, params] = useRoute("/doctors/:doctorId");
   const doctorId = params?.doctorId || "";
+  const [selectedClinicId, setSelectedClinicId] = useState<string>("");
+  const [selectedRole, setSelectedRole] = useState<'admin' | 'member'>('member');
 
   const { data: doctor, isLoading: doctorLoading } = useDoctor(doctorId);
   const { data: analytics, isLoading: analyticsLoading } = useDoctorAnalytics(doctorId);
   const { data: profileViews, isLoading: viewsLoading } = useDoctorProfileViews(doctorId, 50);
+  const { data: organizationsData } = useOrganizations({ status: 'approved' });
+  const addToClinicMutation = useAddDoctorToClinic();
+
+  const handleAddToClinic = () => {
+    if (doctorId && selectedClinicId) {
+      addToClinicMutation.mutate(
+        { clinicId: selectedClinicId, doctorId, role: selectedRole },
+        {
+          onSuccess: () => {
+            setSelectedClinicId("");
+            setSelectedRole('member');
+          },
+        }
+      );
+    }
+  };
 
   if (doctorLoading) {
     return (
@@ -223,6 +245,58 @@ export default function DoctorDetailPage() {
             </Card>
           </div>
         )}
+
+        {/* Add to Clinic Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Building2 className="w-5 h-5" />
+              Add Doctor to Clinic
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="clinic-select">Select Clinic</Label>
+                <Select value={selectedClinicId} onValueChange={setSelectedClinicId}>
+                  <SelectTrigger id="clinic-select" className="mt-2">
+                    <SelectValue placeholder="Choose a clinic to add doctor to..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {organizationsData?.data?.map((clinic) => (
+                      <SelectItem key={clinic.id} value={clinic.id}>
+                        {clinic.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="role-select">Role</Label>
+                <Select value={selectedRole} onValueChange={(value: 'admin' | 'member') => setSelectedRole(value)}>
+                  <SelectTrigger id="role-select" className="mt-2">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="member">Member</SelectItem>
+                    <SelectItem value="admin">Admin</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Member: Regular clinic member. Admin: Can manage clinic settings and members.
+                </p>
+              </div>
+              <Button
+                onClick={handleAddToClinic}
+                disabled={!selectedClinicId || addToClinicMutation.isPending}
+                className="w-full"
+              >
+                {addToClinicMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                Add Doctor to Clinic
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Recent Profile Views */}
         <Card>

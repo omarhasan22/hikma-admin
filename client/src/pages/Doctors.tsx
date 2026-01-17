@@ -8,6 +8,7 @@ import {
   useCreateDoctor,
   useDeleteDoctor,
 } from '@/hooks/use-doctors';
+import { useOrganizations, useAddDoctorToClinic } from '@/hooks/use-organizations';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import {
@@ -36,11 +37,13 @@ import {
   Plus,
   Trash2,
   Stethoscope,
+  Building2,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Link } from 'wouter';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export default function DoctorsPage() {
   const [filter, setFilter] = useState<'all' | 'pending' | 'vip'>('all');
@@ -48,6 +51,10 @@ export default function DoctorsPage() {
   const [rejectReason, setRejectReason] = useState('');
   const [selectedDoctorId, setSelectedDoctorId] = useState<string | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isAddToClinicOpen, setIsAddToClinicOpen] = useState(false);
+  const [doctorToAdd, setDoctorToAdd] = useState<string | null>(null);
+  const [selectedClinicId, setSelectedClinicId] = useState<string>('');
+  const [selectedRole, setSelectedRole] = useState<'admin' | 'member'>('member');
 
   const { data: doctorsData, isLoading } = useDoctors({
     search: search || undefined,
@@ -60,6 +67,8 @@ export default function DoctorsPage() {
   const setVipMutation = useSetVipDoctor();
   const createMutation = useCreateDoctor();
   const deleteMutation = useDeleteDoctor();
+  const addToClinicMutation = useAddDoctorToClinic();
+  const { data: organizationsData } = useOrganizations({ status: 'approved' });
 
   const handleDelete = (doctorId: string) => {
     if (
@@ -85,6 +94,28 @@ export default function DoctorsPage() {
 
   const handleToggleVip = (doctorId: string, currentStatus: boolean) => {
     setVipMutation.mutate({ doctorId, isVip: !currentStatus });
+  };
+
+  const handleOpenAddToClinic = (doctorId: string) => {
+    setDoctorToAdd(doctorId);
+    setSelectedClinicId('');
+    setSelectedRole('member');
+    setIsAddToClinicOpen(true);
+  };
+
+  const handleAddToClinic = () => {
+    if (doctorToAdd && selectedClinicId) {
+      addToClinicMutation.mutate(
+        { clinicId: selectedClinicId, doctorId: doctorToAdd, role: selectedRole },
+        {
+          onSuccess: () => {
+            setIsAddToClinicOpen(false);
+            setDoctorToAdd(null);
+            setSelectedClinicId('');
+          },
+        }
+      );
+    }
   };
 
   return (
@@ -171,34 +202,32 @@ export default function DoctorsPage() {
                     key={doctor.id}
                     className="hover:bg-muted/20 border-b border-border last:border-0 transition-colors"
                   >
-                    <TableCell
-                      className="pl-6 cursor-pointer"
-                      onClick={() => (window.location.href = `/doctors/${doctor.id}`)}
-                    >
-                      {doctor.user?.avatar_url || doctor.avatar_url ? (
-                        <img
-                          src={doctor.user?.avatar_url || doctor.avatar_url}
-                          alt={doctor.user?.full_name || doctor.full_name || 'Doctor'}
-                          className="w-12 h-12 rounded-full object-cover border-2 border-border"
-                        />
-                      ) : (
-                        <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center border-2 border-border">
-                          <Stethoscope className="w-6 h-6 text-muted-foreground" />
-                        </div>
-                      )}
+                    <TableCell className="pl-6">
+                      <Link href={`/doctors/${doctor.id}`} className="block">
+                        {doctor.user?.avatar_url || doctor.avatar_url ? (
+                          <img
+                            src={doctor.user?.avatar_url || doctor.avatar_url}
+                            alt={doctor.user?.full_name || doctor.full_name || 'Doctor'}
+                            className="w-12 h-12 rounded-full object-cover border-2 border-border"
+                          />
+                        ) : (
+                          <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center border-2 border-border">
+                            <Stethoscope className="w-6 h-6 text-muted-foreground" />
+                          </div>
+                        )}
+                      </Link>
                     </TableCell>
-                    <TableCell
-                      className="font-medium cursor-pointer"
-                      onClick={() => (window.location.href = `/doctors/${doctor.id}`)}
-                    >
-                      <div className="flex flex-col">
-                        <span className="text-base">
-                          {doctor.user?.full_name || doctor.full_name || 'N/A'}
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          {doctor.user?.email || doctor.email || 'No email'}
-                        </span>
-                      </div>
+                    <TableCell className="font-medium">
+                      <Link href={`/doctors/${doctor.id}`} className="block">
+                        <div className="flex flex-col">
+                          <span className="text-base">
+                            {doctor.user?.full_name || doctor.full_name || 'N/A'}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {doctor.user?.email || doctor.email || 'No email'}
+                          </span>
+                        </div>
+                      </Link>
                     </TableCell>
                     <TableCell
                       className="text-muted-foreground cursor-pointer"
@@ -315,6 +344,70 @@ export default function DoctorsPage() {
                             }
                           />
                         </Button>
+
+                        <Dialog open={isAddToClinicOpen && doctorToAdd === doctor.id} onOpenChange={(open) => {
+                          if (!open) {
+                            setIsAddToClinicOpen(false);
+                            setDoctorToAdd(null);
+                          }
+                        }}>
+                          <DialogTrigger asChild>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleOpenAddToClinic(String(doctor.id));
+                              }}
+                              title="Add doctor to clinic"
+                            >
+                              <Building2 className="w-4 h-4" />
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>Add Doctor to Clinic</DialogTitle>
+                            </DialogHeader>
+                            <div className="space-y-4 pt-4">
+                              <div>
+                                <Label htmlFor="clinic-select">Select Clinic</Label>
+                                <Select value={selectedClinicId} onValueChange={setSelectedClinicId}>
+                                  <SelectTrigger id="clinic-select">
+                                    <SelectValue placeholder="Choose a clinic..." />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {organizationsData?.data?.map((clinic) => (
+                                      <SelectItem key={clinic.id} value={clinic.id}>
+                                        {clinic.name}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div>
+                                <Label htmlFor="role-select">Role</Label>
+                                <Select value={selectedRole} onValueChange={(value: 'admin' | 'member') => setSelectedRole(value)}>
+                                  <SelectTrigger id="role-select">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="member">Member</SelectItem>
+                                    <SelectItem value="admin">Admin</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <Button
+                                className="w-full"
+                                onClick={handleAddToClinic}
+                                disabled={!selectedClinicId || addToClinicMutation.isPending}
+                              >
+                                {addToClinicMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                                Add to Clinic
+                              </Button>
+                            </div>
+                          </DialogContent>
+                        </Dialog>
 
                         <Button
                           size="sm"
