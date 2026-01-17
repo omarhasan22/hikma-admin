@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useRoute } from "wouter";
+import { useRoute, useLocation } from "wouter";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useDoctor } from "@/hooks/use-doctors";
 import { useDoctorAnalytics, useDoctorProfileViews } from "@/hooks/use-doctor-analytics";
@@ -16,6 +16,7 @@ import { format } from "date-fns";
 
 export default function DoctorDetailPage() {
   const [match, params] = useRoute("/doctors/:doctorId");
+  const [, setLocation] = useLocation();
   const doctorId = params?.doctorId || "";
   const [selectedClinicId, setSelectedClinicId] = useState<string>("");
   const [selectedRole, setSelectedRole] = useState<'admin' | 'member'>('member');
@@ -72,7 +73,7 @@ export default function DoctorDetailPage() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => window.history.back()}
+            onClick={() => setLocation("/doctors")}
             className="gap-2"
           >
             <ArrowLeft className="w-4 h-4" />
