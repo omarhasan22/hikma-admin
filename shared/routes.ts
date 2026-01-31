@@ -129,13 +129,13 @@ export const api = {
       path: '/api/admin/doctors',
       input: insertDoctorSchema,
       responses: {
-        201: z.object({ 
+        201: z.object({
           status: z.string(),
           error: z.string(),
           errorCode: z.string(),
-          result: z.object({ 
+          result: z.object({
             message: z.string(),
-            doctor: z.custom<typeof doctors.$inferSelect>() 
+            doctor: z.custom<typeof doctors.$inferSelect>()
           }),
         }),
       },
@@ -186,7 +186,7 @@ export const api = {
       method: 'POST' as const,
       path: '/api/admin/doctors/:doctorId/approve',
       responses: {
-        200: z.object({ 
+        200: z.object({
           status: z.string(),
           error: z.string(),
           errorCode: z.string(),
@@ -199,7 +199,7 @@ export const api = {
       path: '/api/admin/doctors/:doctorId/reject',
       input: z.object({ reason: z.string() }),
       responses: {
-        200: z.object({ 
+        200: z.object({
           status: z.string(),
           error: z.string(),
           errorCode: z.string(),
@@ -212,7 +212,7 @@ export const api = {
       path: '/api/admin/doctors/:doctorId/vip',
       input: z.object({ isVip: z.boolean(), expiresAt: z.string().nullable().optional() }),
       responses: {
-        200: z.object({ 
+        200: z.object({
           status: z.string(),
           error: z.string(),
           errorCode: z.string(),
@@ -224,7 +224,7 @@ export const api = {
       method: 'DELETE' as const,
       path: '/api/admin/doctors/:doctorId',
       responses: {
-        200: z.object({ 
+        200: z.object({
           status: z.string(),
           error: z.string(),
           errorCode: z.string(),
@@ -291,6 +291,155 @@ export const api = {
       },
     },
   },
+  clinicDoctorServices: {
+    list: {
+      method: 'GET' as const,
+      path: '/api/admin/doctors/:doctorId/clinics/:clinicId/services',
+      responses: {
+        200: z.object({
+          status: z.string(),
+          error: z.string(),
+          errorCode: z.string(),
+          result: z.array(z.any()),
+        }),
+      },
+    },
+    create: {
+      method: 'POST' as const,
+      path: '/api/admin/doctors/:doctorId/clinics/:clinicId/services',
+      input: z.object({
+        name: z.string(),
+        nameAr: z.string().optional(),
+        price: z.number(),
+        durationMinutes: z.number(),
+      }),
+      responses: {
+        201: z.object({
+          status: z.string(),
+          error: z.string(),
+          errorCode: z.string(),
+          result: z.any(),
+        }),
+      },
+    },
+    update: {
+      method: 'PUT' as const,
+      path: '/api/admin/doctors/:doctorId/clinics/:clinicId/services/:serviceId',
+      input: z.object({
+        name: z.string().optional(),
+        nameAr: z.string().optional(),
+        price: z.number().optional(),
+        durationMinutes: z.number().optional(),
+        displayOrder: z.number().optional(),
+        isActive: z.boolean().optional(),
+      }),
+      responses: {
+        200: z.object({
+          status: z.string(),
+          error: z.string(),
+          errorCode: z.string(),
+          result: z.any(),
+        }),
+      },
+    },
+    delete: {
+      method: 'DELETE' as const,
+      path: '/api/admin/doctors/:doctorId/clinics/:clinicId/services/:serviceId',
+      responses: {
+        200: z.object({
+          status: z.string(),
+          error: z.string(),
+          errorCode: z.string(),
+          result: z.object({ success: z.boolean() }),
+        }),
+      },
+    },
+  },
+  clinicWorkingHours: {
+    list: {
+      method: 'GET' as const,
+      path: '/api/admin/doctors/:doctorId/clinics/:clinicId/working-hours',
+      responses: {
+        200: z.object({
+          status: z.string(),
+          error: z.string(),
+          errorCode: z.string(),
+          result: z.array(z.any()),
+        }),
+      },
+    },
+    create: {
+      method: 'POST' as const,
+      path: '/api/admin/doctors/:doctorId/clinics/:clinicId/working-hours',
+      input: z.object({
+        dayOfWeek: z.string(),
+        startTime: z.string(),
+        endTime: z.string(),
+        breakStart: z.string().nullable().optional(),
+        breakEnd: z.string().nullable().optional(),
+        isActive: z.boolean().optional(),
+      }),
+      responses: {
+        201: z.object({
+          status: z.string(),
+          error: z.string(),
+          errorCode: z.string(),
+          result: z.any(),
+        }),
+      },
+    },
+    update: {
+      method: 'PUT' as const,
+      path: '/api/admin/doctors/:doctorId/clinics/:clinicId/working-hours/:dayOfWeek',
+      input: z.object({
+        startTime: z.string().optional(),
+        endTime: z.string().optional(),
+        breakStart: z.string().nullable().optional(),
+        breakEnd: z.string().nullable().optional(),
+        isActive: z.boolean().optional(),
+      }),
+      responses: {
+        200: z.object({
+          status: z.string(),
+          error: z.string(),
+          errorCode: z.string(),
+          result: z.any(),
+        }),
+      },
+    },
+    delete: {
+      method: 'DELETE' as const,
+      path: '/api/admin/doctors/:doctorId/clinics/:clinicId/working-hours/:dayOfWeek',
+      responses: {
+        200: z.object({
+          status: z.string(),
+          error: z.string(),
+          errorCode: z.string(),
+          result: z.object({ success: z.boolean() }),
+        }),
+      },
+    },
+  },
+  clinicDoctorSettings: {
+    update: {
+      method: 'PUT' as const,
+      path: '/api/admin/doctors/:doctorId/clinics/:clinicId/settings',
+      input: z.object({
+        defaultSlotDuration: z.number().optional(),
+        maxBookingDays: z.number().optional(),
+        isPrimary: z.boolean().optional(),
+        role: z.string().optional(),
+      }),
+      responses: {
+        200: z.object({
+          status: z.string(),
+          error: z.string(),
+          errorCode: z.string(),
+          result: z.any(),
+        }),
+      },
+    },
+  },
   organizations: {
     list: {
       method: 'GET' as const,
@@ -339,13 +488,13 @@ export const api = {
         logo_url: z.string().url().max(500).optional(),
       }),
       responses: {
-        201: z.object({ 
+        201: z.object({
           status: z.string(),
           error: z.string(),
           errorCode: z.string(),
-          result: z.object({ 
+          result: z.object({
             message: z.string(),
-            clinic: z.custom<typeof organizations.$inferSelect>() 
+            clinic: z.custom<typeof organizations.$inferSelect>()
           }),
         }),
       },
@@ -367,7 +516,7 @@ export const api = {
       method: 'POST' as const,
       path: '/api/admin/clinics/:clinicId/approve',
       responses: {
-        200: z.object({ 
+        200: z.object({
           status: z.string(),
           error: z.string(),
           errorCode: z.string(),
@@ -380,7 +529,7 @@ export const api = {
       path: '/api/admin/clinics/:clinicId/reject',
       input: z.object({ reason: z.string() }),
       responses: {
-        200: z.object({ 
+        200: z.object({
           status: z.string(),
           error: z.string(),
           errorCode: z.string(),
@@ -393,7 +542,7 @@ export const api = {
       path: '/api/admin/clinics/:clinicId/suspend',
       input: z.object({ reason: z.string() }),
       responses: {
-        200: z.object({ 
+        200: z.object({
           status: z.string(),
           error: z.string(),
           errorCode: z.string(),
@@ -405,7 +554,7 @@ export const api = {
       method: 'DELETE' as const,
       path: '/api/admin/clinics/:clinicId',
       responses: {
-        200: z.object({ 
+        200: z.object({
           status: z.string(),
           error: z.string(),
           errorCode: z.string(),
@@ -485,7 +634,7 @@ export const api = {
       path: '/api/specialties',
       input: insertServiceSchema,
       responses: {
-        201: z.object({ 
+        201: z.object({
           status: z.string(),
           error: z.string(),
           errorCode: z.string(),
@@ -510,7 +659,7 @@ export const api = {
       method: 'DELETE' as const,
       path: '/api/specialties/:specialtyId',
       responses: {
-        200: z.object({ 
+        200: z.object({
           status: z.string(),
           error: z.string(),
           errorCode: z.string(),
@@ -604,7 +753,7 @@ export const api = {
       path: '/api/sliders',
       input: insertSliderSchema,
       responses: {
-        201: z.object({ 
+        201: z.object({
           status: z.string(),
           error: z.string(),
           errorCode: z.string(),
@@ -629,7 +778,7 @@ export const api = {
       method: 'DELETE' as const,
       path: '/api/sliders/:sliderId',
       responses: {
-        200: z.object({ 
+        200: z.object({
           status: z.string(),
           error: z.string(),
           errorCode: z.string(),
@@ -681,7 +830,7 @@ export const api = {
       path: '/api/daily-tips',
       input: insertTipSchema,
       responses: {
-        201: z.object({ 
+        201: z.object({
           status: z.string(),
           error: z.string(),
           errorCode: z.string(),
@@ -706,7 +855,7 @@ export const api = {
       method: 'DELETE' as const,
       path: '/api/daily-tips/:tipId',
       responses: {
-        200: z.object({ 
+        200: z.object({
           status: z.string(),
           error: z.string(),
           errorCode: z.string(),

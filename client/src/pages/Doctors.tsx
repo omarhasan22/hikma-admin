@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import {
   useDoctors,
@@ -7,8 +7,10 @@ import {
   useSetVipDoctor,
   useCreateDoctor,
   useDeleteDoctor,
+  useUpdateDoctor,
 } from '@/hooks/use-doctors';
 import { useOrganizations, useAddDoctorToClinic } from '@/hooks/use-organizations';
+import { useServices } from '@/hooks/use-services';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import {
@@ -38,6 +40,7 @@ import {
   Trash2,
   Stethoscope,
   Building2,
+  Edit,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { Label } from '@/components/ui/label';
@@ -55,6 +58,8 @@ export default function DoctorsPage() {
   const [doctorToAdd, setDoctorToAdd] = useState<string | null>(null);
   const [selectedClinicId, setSelectedClinicId] = useState<string>('');
   const [selectedRole, setSelectedRole] = useState<'admin' | 'member'>('member');
+  const [editingDoctor, setEditingDoctor] = useState<any>(null);
+  const [isEditOpen, setIsEditOpen] = useState(false);
 
   const { data: doctorsData, isLoading } = useDoctors({
     search: search || undefined,
@@ -66,6 +71,7 @@ export default function DoctorsPage() {
   const rejectMutation = useRejectDoctor();
   const setVipMutation = useSetVipDoctor();
   const createMutation = useCreateDoctor();
+  const updateMutation = useUpdateDoctor();
   const deleteMutation = useDeleteDoctor();
   const addToClinicMutation = useAddDoctorToClinic();
   const { data: organizationsData } = useOrganizations({ status: 'approved' });
@@ -409,6 +415,49 @@ export default function DoctorsPage() {
                           </DialogContent>
                         </Dialog>
 
+                        <Dialog open={isEditOpen && editingDoctor?.id === doctor.id} onOpenChange={(open) => {
+                          if (!open) {
+                            setIsEditOpen(false);
+                            setEditingDoctor(null);
+                          }
+                        }}>
+                          <DialogTrigger asChild>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingDoctor(doctor);
+                                setIsEditOpen(true);
+                              }}
+                              title="Edit doctor"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                            <DialogHeader>
+                              <DialogTitle>Edit Doctor</DialogTitle>
+                            </DialogHeader>
+                            <DoctorForm
+                              doctor={doctor}
+                              onSubmit={(data) => {
+                                updateMutation.mutate({
+                                  doctorId: String(doctor.id),
+                                  data: data as any,
+                                }, {
+                                  onSuccess: () => {
+                                    setIsEditOpen(false);
+                                    setEditingDoctor(null);
+                                  },
+                                });
+                              }}
+                              isLoading={updateMutation.isPending}
+                            />
+                          </DialogContent>
+                        </Dialog>
+
                         <Button
                           size="sm"
                           variant="ghost"
@@ -439,13 +488,18 @@ export default function DoctorsPage() {
   );
 }
 
-function DoctorForm({
+export function DoctorForm({
+  doctor,
   onSubmit,
   isLoading,
 }: {
+  doctor?: any;
   onSubmit: (data: any) => void;
   isLoading: boolean;
 }) {
+  const isEditMode = !!doctor;
+  const { data: specialtiesData } = useServices();
+  
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [phone, setPhone] = useState('');
@@ -456,8 +510,82 @@ function DoctorForm({
   const [email, setEmail] = useState('');
   const [bio, setBio] = useState('');
   const [bioAr, setBioAr] = useState('');
+  const [specialtyId, setSpecialtyId] = useState<string>('');
+  const [licenseNumber, setLicenseNumber] = useState('');
+  const [experienceYears, setExperienceYears] = useState('');
+  const [address, setAddress] = useState('');
+  const [latitude, setLatitude] = useState('');
+  const [longitude, setLongitude] = useState('');
+  const [whatsapp, setWhatsapp] = useState('');
+  const [university, setUniversity] = useState('');
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+
+  // Initialize form fields from doctor data when editing
+  useEffect(() => {
+    if (doctor) {
+      const user = doctor.user || {};
+      const specialty = doctor.specialty || {};
+      
+      setPhone(user.phone || doctor.phone || '');
+      setFirstName(user.first_name || doctor.first_name || '');
+      setFirstNameAr(user.first_name_ar || doctor.first_name_ar || '');
+      setLastName(user.last_name || doctor.last_name || '');
+      setLastNameAr(user.last_name_ar || doctor.last_name_ar || '');
+      setEmail(user.email || doctor.email || '');
+      setBio(user.bio || doctor.bio || '');
+      setBioAr(user.bio_ar || doctor.bio_ar || '');
+      // Convert specialty_id to string for Select component, with fallbacks
+      setSpecialtyId(String(doctor.specialty_id || specialty.id || doctor.specialtyId || ''));
+      setLicenseNumber(doctor.license_number || doctor.licenseNumber || '');
+      // Handle numeric fields with proper null checking
+      setExperienceYears(
+        doctor.experience_years !== null && doctor.experience_years !== undefined
+          ? String(doctor.experience_years)
+          : doctor.experienceYears !== null && doctor.experienceYears !== undefined
+          ? String(doctor.experienceYears)
+          : ''
+      );
+      setAddress(doctor.address || '');
+      // Handle latitude/longitude with proper null checking
+      setLatitude(
+        doctor.latitude !== null && doctor.latitude !== undefined
+          ? String(doctor.latitude)
+          : ''
+      );
+      setLongitude(
+        doctor.longitude !== null && doctor.longitude !== undefined
+          ? String(doctor.longitude)
+          : ''
+      );
+      setWhatsapp(doctor.whatsapp || '');
+      setUniversity(doctor.university || '');
+      setAvatarPreview(user.avatar_url || doctor.avatar_url || null);
+      // Don't set username/password in edit mode
+    } else {
+      // Reset all fields for create mode
+      setUsername('');
+      setPassword('');
+      setPhone('');
+      setFirstName('');
+      setFirstNameAr('');
+      setLastName('');
+      setLastNameAr('');
+      setEmail('');
+      setBio('');
+      setBioAr('');
+      setSpecialtyId('');
+      setLicenseNumber('');
+      setExperienceYears('');
+      setAddress('');
+      setLatitude('');
+      setLongitude('');
+      setWhatsapp('');
+      setUniversity('');
+      setAvatarFile(null);
+      setAvatarPreview(null);
+    }
+  }, [doctor]);
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
@@ -478,70 +606,120 @@ function DoctorForm({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    const formData = new FormData();
-    formData.append('username', username);
-    formData.append('password', password);
-    formData.append('phone', phone);
-    formData.append('firstName', firstName);
-    if (firstNameAr) formData.append('firstNameAr', firstNameAr);
-    formData.append('lastName', lastName);
-    if (lastNameAr) formData.append('lastNameAr', lastNameAr);
-    if (email) formData.append('email', email);
-    if (bio) formData.append('bio', bio);
-    if (bioAr) formData.append('bio_ar', bioAr);
-    if (avatarFile) {
-      formData.append('avatar', avatarFile);
-    }
+    if (isEditMode) {
+      // For edit mode, use JSON format (can include FormData if avatar is being updated)
+      const data: any = {
+        phone,
+        firstName,
+        lastName,
+        email: email || undefined,
+      };
+      
+      if (firstNameAr) data.firstNameAr = firstNameAr;
+      if (lastNameAr) data.lastNameAr = lastNameAr;
+      if (bio) data.bio = bio;
+      if (bioAr) data.bioAr = bioAr;
+      if (specialtyId) data.specialtyId = specialtyId;
+      if (licenseNumber) data.licenseNumber = licenseNumber;
+      if (experienceYears) data.experienceYears = parseInt(experienceYears) || undefined;
+      if (address) data.address = address;
+      if (latitude) data.latitude = parseFloat(latitude) || undefined;
+      if (longitude) data.longitude = parseFloat(longitude) || undefined;
+      if (whatsapp) data.whatsapp = whatsapp;
+      if (university) data.university = university;
+      
+      // If avatar file is provided, use FormData
+      if (avatarFile) {
+        const formData = new FormData();
+        Object.keys(data).forEach(key => {
+          if (data[key] !== undefined) {
+            formData.append(key, typeof data[key] === 'object' ? JSON.stringify(data[key]) : String(data[key]));
+          }
+        });
+        formData.append('avatar', avatarFile);
+        onSubmit(formData);
+      } else {
+        onSubmit(data);
+      }
+    } else {
+      // For create mode, use FormData
+      const formData = new FormData();
+      formData.append('username', username);
+      formData.append('password', password);
+      formData.append('phone', phone);
+      formData.append('firstName', firstName);
+      if (firstNameAr) formData.append('firstNameAr', firstNameAr);
+      formData.append('lastName', lastName);
+      if (lastNameAr) formData.append('lastNameAr', lastNameAr);
+      if (email) formData.append('email', email);
+      if (bio) formData.append('bio', bio);
+      if (bioAr) formData.append('bio_ar', bioAr);
+      if (specialtyId) formData.append('specialtyId', specialtyId);
+      if (licenseNumber) formData.append('licenseNumber', licenseNumber);
+      if (experienceYears) formData.append('experienceYears', experienceYears);
+      if (address) formData.append('address', address);
+      if (latitude) formData.append('latitude', latitude);
+      if (longitude) formData.append('longitude', longitude);
+      if (whatsapp) formData.append('whatsapp', whatsapp);
+      if (university) formData.append('university', university);
+      if (avatarFile) {
+        formData.append('avatar', avatarFile);
+      }
 
-    onSubmit(formData);
+      onSubmit(formData);
+    }
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 pt-4">
-      <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mb-4">
-        <p className="text-sm text-blue-900 dark:text-blue-100">
-          <strong>Note:</strong> Doctors cannot signup themselves. The superadmin creates doctor
-          accounts with username and password. The doctor will use these credentials to login with
-          username + password + phone OTP verification.
-        </p>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <Label htmlFor="username">Username *</Label>
-          <Input
-            id="username"
-            value={username}
-            onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, ''))}
-            required
-            minLength={3}
-            maxLength={50}
-            placeholder="doctor123"
-            pattern="[a-z0-9]{3,50}"
-            title="3-50 alphanumeric characters only"
-          />
-          <p className="text-sm text-muted-foreground mt-1">
-            Alphanumeric only, 3-50 characters. Used for login.
+      {!isEditMode && (
+        <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mb-4">
+          <p className="text-sm text-blue-900 dark:text-blue-100">
+            <strong>Note:</strong> Doctors cannot signup themselves. The superadmin creates doctor
+            accounts with username and password. The doctor will use these credentials to login with
+            username + password + phone OTP verification.
           </p>
         </div>
+      )}
 
-        <div>
-          <Label htmlFor="password">Password *</Label>
-          <Input
-            id="password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            minLength={6}
-            maxLength={100}
-            placeholder="••••••••"
-          />
-          <p className="text-sm text-muted-foreground mt-1">
-            Minimum 6 characters. Share securely with the doctor.
-          </p>
+      {!isEditMode && (
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <Label htmlFor="username">Username *</Label>
+            <Input
+              id="username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, ''))}
+              required
+              minLength={3}
+              maxLength={50}
+              placeholder="doctor123"
+              pattern="[a-z0-9]{3,50}"
+              title="3-50 alphanumeric characters only"
+            />
+            <p className="text-sm text-muted-foreground mt-1">
+              Alphanumeric only, 3-50 characters. Used for login.
+            </p>
+          </div>
+
+          <div>
+            <Label htmlFor="password">Password *</Label>
+            <Input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              minLength={6}
+              maxLength={100}
+              placeholder="••••••••"
+            />
+            <p className="text-sm text-muted-foreground mt-1">
+              Minimum 6 characters. Share securely with the doctor.
+            </p>
+          </div>
         </div>
-      </div>
+      )}
 
       <div>
         <Label htmlFor="phone">Phone Number *</Label>
@@ -619,6 +797,107 @@ function DoctorForm({
       </div>
 
       <div>
+        <Label htmlFor="specialty">Specialty</Label>
+        <Select value={specialtyId} onValueChange={setSpecialtyId}>
+          <SelectTrigger id="specialty">
+            <SelectValue placeholder="Select a specialty..." />
+          </SelectTrigger>
+          <SelectContent>
+            {specialtiesData?.data?.map((specialty) => (
+              <SelectItem key={specialty.id} value={String(specialty.id)}>
+                {specialty.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <p className="text-sm text-muted-foreground mt-1">Select the doctor's medical specialty.</p>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label htmlFor="licenseNumber">License Number</Label>
+          <Input
+            id="licenseNumber"
+            value={licenseNumber}
+            onChange={(e) => setLicenseNumber(e.target.value)}
+            placeholder="LIC123456"
+          />
+        </div>
+
+        <div>
+          <Label htmlFor="experienceYears">Experience (Years)</Label>
+          <Input
+            id="experienceYears"
+            type="number"
+            value={experienceYears}
+            onChange={(e) => setExperienceYears(e.target.value)}
+            placeholder="5"
+            min="0"
+            max="100"
+          />
+        </div>
+      </div>
+
+      <div>
+        <Label htmlFor="address">Address</Label>
+        <Input
+          id="address"
+          value={address}
+          onChange={(e) => setAddress(e.target.value)}
+          placeholder="123 Main Street, City, Country"
+        />
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label htmlFor="latitude">Latitude</Label>
+          <Input
+            id="latitude"
+            type="number"
+            step="any"
+            value={latitude}
+            onChange={(e) => setLatitude(e.target.value)}
+            placeholder="33.8547"
+          />
+        </div>
+
+        <div>
+          <Label htmlFor="longitude">Longitude</Label>
+          <Input
+            id="longitude"
+            type="number"
+            step="any"
+            value={longitude}
+            onChange={(e) => setLongitude(e.target.value)}
+            placeholder="35.8623"
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label htmlFor="whatsapp">WhatsApp</Label>
+          <Input
+            id="whatsapp"
+            value={whatsapp}
+            onChange={(e) => setWhatsapp(e.target.value)}
+            type="tel"
+            placeholder="+96171123456"
+          />
+        </div>
+
+        <div>
+          <Label htmlFor="university">University</Label>
+          <Input
+            id="university"
+            value={university}
+            onChange={(e) => setUniversity(e.target.value)}
+            placeholder="American University of Beirut"
+          />
+        </div>
+      </div>
+
+      <div>
         <Label htmlFor="bio">Bio (English)</Label>
         <Textarea
           id="bio"
@@ -657,15 +936,20 @@ function DoctorForm({
             />
           </div>
         )}
+        {isEditMode && (
+          <p className="text-sm text-muted-foreground mt-1">
+            Leave empty to keep current avatar, or upload a new one to replace it.
+          </p>
+        )}
       </div>
 
       <Button
         type="submit"
         className="w-full"
-        disabled={isLoading || !username || !password || !phone || !firstName || !lastName}
+        disabled={isLoading || (!isEditMode && (!username || !password || !phone || !firstName || !lastName)) || (isEditMode && (!phone || !firstName || !lastName))}
       >
         {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-        Create Doctor Account
+        {isEditMode ? 'Update Doctor' : 'Create Doctor Account'}
       </Button>
     </form>
   );

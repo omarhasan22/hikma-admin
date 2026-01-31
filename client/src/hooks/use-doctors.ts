@@ -83,18 +83,32 @@ export function useUpdateDoctor() {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async ({ doctorId, data }: { doctorId: string; data: Partial<z.infer<typeof api.doctors.update.input>> }) => {
-      const url = buildUrl(api.doctors.update.path, { doctorId });
-      const res = await apiFetch(url, {
+    mutationFn: async ({ doctorId, data }: { doctorId: string; data: FormData | Partial<z.infer<typeof api.doctors.update.input>> }) => {
+      const isFormData = data instanceof FormData;
+      const url = getApiUrl(buildUrl(api.doctors.update.path, { doctorId }));
+      const headers: Record<string, string> = {};
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
+      const res = await fetch(url, {
         method: api.doctors.update.method,
-        token,
-        body: data,
+        headers: isFormData ? headers : { ...headers, "Content-Type": "application/json" },
+        body: isFormData ? data : JSON.stringify(data),
+        credentials: "include",
       });
+
+      if (!res.ok) {
+        const text = (await res.text()) || res.statusText;
+        throw new Error(`${res.status}: ${text}`);
+      }
+
       const response = api.doctors.update.responses[200].parse(await res.json());
       return response.result.doctor;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [api.doctors.list.path] });
+      queryClient.invalidateQueries({ queryKey: [api.doctors.getAdmin.path] });
       toast({ title: "Success", description: "Doctor updated successfully" });
     },
     onError: (err) => toast({ variant: "destructive", title: "Error", description: err.message })
