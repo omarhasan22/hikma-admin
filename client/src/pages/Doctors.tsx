@@ -5,7 +5,6 @@ import {
   useApproveDoctor,
   useRejectDoctor,
   useSetVipDoctor,
-  useCreateDoctor,
   useDeleteDoctor,
   useUpdateDoctor,
 } from '@/hooks/use-doctors';
@@ -45,21 +44,19 @@ import {
 import { format } from 'date-fns';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Link } from 'wouter';
+import { Link, useLocation } from 'wouter';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export default function DoctorsPage() {
+  const [, setLocation] = useLocation();
   const [filter, setFilter] = useState<'all' | 'pending' | 'vip'>('all');
   const [search, setSearch] = useState('');
   const [rejectReason, setRejectReason] = useState('');
   const [selectedDoctorId, setSelectedDoctorId] = useState<string | null>(null);
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isAddToClinicOpen, setIsAddToClinicOpen] = useState(false);
   const [doctorToAdd, setDoctorToAdd] = useState<string | null>(null);
   const [selectedClinicId, setSelectedClinicId] = useState<string>('');
   const [selectedRole, setSelectedRole] = useState<'admin' | 'member'>('member');
-  const [editingDoctor, setEditingDoctor] = useState<any>(null);
-  const [isEditOpen, setIsEditOpen] = useState(false);
 
   const { data: doctorsData, isLoading } = useDoctors({
     search: search || undefined,
@@ -70,7 +67,6 @@ export default function DoctorsPage() {
   const approveMutation = useApproveDoctor();
   const rejectMutation = useRejectDoctor();
   const setVipMutation = useSetVipDoctor();
-  const createMutation = useCreateDoctor();
   const updateMutation = useUpdateDoctor();
   const deleteMutation = useDeleteDoctor();
   const addToClinicMutation = useAddDoctorToClinic();
@@ -132,26 +128,12 @@ export default function DoctorsPage() {
             <h1 className="text-3xl font-display font-bold text-foreground">Doctors</h1>
             <p className="text-muted-foreground mt-1">Manage doctor profiles and verifications.</p>
           </div>
-          <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-            <DialogTrigger asChild>
-              <Button className="bg-primary text-primary-foreground shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all rounded-xl">
-                <Plus className="w-4 h-4 mr-2" /> Add New Doctor
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Create New Doctor</DialogTitle>
-              </DialogHeader>
-              <DoctorForm
-                onSubmit={(data) => {
-                  createMutation.mutate(data as any, {
-                    onSuccess: () => setIsCreateOpen(false),
-                  });
-                }}
-                isLoading={createMutation.isPending}
-              />
-            </DialogContent>
-          </Dialog>
+          <Button 
+            className="bg-primary text-primary-foreground shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all rounded-xl"
+            onClick={() => setLocation("/doctors/new")}
+          >
+            <Plus className="w-4 h-4 mr-2" /> Add New Doctor
+          </Button>
         </div>
 
         {/* Filters & Search */}
@@ -227,10 +209,25 @@ export default function DoctorsPage() {
                       <Link href={`/doctors/${doctor.id}`} className="block">
                         <div className="flex flex-col">
                           <span className="text-base">
-                            {doctor.user?.full_name || doctor.full_name || 'N/A'}
+                            {(() => {
+                              const doctorAny = doctor as any;
+                              const user = doctorAny.user;
+                              // Try full_name first
+                              if (user?.full_name || doctorAny.full_name) {
+                                return user?.full_name || doctorAny.full_name;
+                              }
+                              // Try to construct from first_name and last_name
+                              const firstName = user?.first_name || doctorAny.first_name || user?.firstName || doctorAny.firstName;
+                              const lastName = user?.last_name || doctorAny.last_name || user?.lastName || doctorAny.lastName;
+                              if (firstName || lastName) {
+                                return `${firstName || ''} ${lastName || ''}`.trim() || 'N/A';
+                              }
+                              // Fallback to fullName (camelCase)
+                              return user?.fullName || doctorAny.fullName || 'N/A';
+                            })()}
                           </span>
                           <span className="text-xs text-muted-foreground">
-                            {doctor.user?.email || doctor.email || 'No email'}
+                            {(doctor as any).user?.email || (doctor as any).email || 'No email'}
                           </span>
                         </div>
                       </Link>
@@ -415,48 +412,18 @@ export default function DoctorsPage() {
                           </DialogContent>
                         </Dialog>
 
-                        <Dialog open={isEditOpen && editingDoctor?.id === doctor.id} onOpenChange={(open) => {
-                          if (!open) {
-                            setIsEditOpen(false);
-                            setEditingDoctor(null);
-                          }
-                        }}>
-                          <DialogTrigger asChild>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setEditingDoctor(doctor);
-                                setIsEditOpen(true);
-                              }}
-                              title="Edit doctor"
-                            >
-                              <Edit className="w-4 h-4" />
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-                            <DialogHeader>
-                              <DialogTitle>Edit Doctor</DialogTitle>
-                            </DialogHeader>
-                            <DoctorForm
-                              doctor={doctor}
-                              onSubmit={(data) => {
-                                updateMutation.mutate({
-                                  doctorId: String(doctor.id),
-                                  data: data as any,
-                                }, {
-                                  onSuccess: () => {
-                                    setIsEditOpen(false);
-                                    setEditingDoctor(null);
-                                  },
-                                });
-                              }}
-                              isLoading={updateMutation.isPending}
-                            />
-                          </DialogContent>
-                        </Dialog>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setLocation(`/doctors/${doctor.id}?edit=true`);
+                          }}
+                          title="Edit doctor"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
 
                         <Button
                           size="sm"

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useRoute, useLocation } from "wouter";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { useDoctor, useUpdateDoctor } from "@/hooks/use-doctors";
+import { useDoctor, useUpdateDoctor, useCreateDoctor } from "@/hooks/use-doctors";
 import { useDoctorAnalytics, useDoctorProfileViews } from "@/hooks/use-doctor-analytics";
 import { useOrganizations, useAddDoctorToClinic } from "@/hooks/use-organizations";
 import { useAddClinicDoctorService, useUpdateClinicDoctorService, useDeleteClinicDoctorService } from "@/hooks/use-clinic-doctor-services";
@@ -20,14 +20,23 @@ import { Textarea } from "@/components/ui/textarea";
 import { format } from "date-fns";
 
 export default function DoctorDetailPage() {
-  const [match, params] = useRoute("/doctors/:doctorId");
-  const [, setLocation] = useLocation();
-  const doctorId = params?.doctorId || "";
+  const [matchNew, paramsNew] = useRoute("/doctors/new");
+  const [matchDetail, paramsDetail] = useRoute("/doctors/:doctorId");
+  const [location, setLocation] = useLocation();
+  const isCreateMode = !!matchNew;
+  const doctorId = isCreateMode ? "new" : (paramsDetail?.doctorId || "");
+  
+  // Check for edit query parameter in URL
+  const searchParams = new URLSearchParams(location.split('?')[1] || '');
+  const shouldStartInEditMode = searchParams.get('edit') === 'true';
+  
   const [selectedClinicId, setSelectedClinicId] = useState<string>("");
   const [selectedRole, setSelectedRole] = useState<'admin' | 'member'>('member');
-  const [isEditMode, setIsEditMode] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(isCreateMode || shouldStartInEditMode); // Start in edit mode for create or if ?edit=true
 
   // Form state
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [firstName, setFirstName] = useState('');
@@ -47,13 +56,14 @@ export default function DoctorDetailPage() {
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
 
-  const { data: doctor, isLoading: doctorLoading } = useDoctor(doctorId);
-  const { data: analytics, isLoading: analyticsLoading } = useDoctorAnalytics(doctorId);
-  const { data: profileViews, isLoading: viewsLoading } = useDoctorProfileViews(doctorId, 50);
+  const { data: doctor, isLoading: doctorLoading } = useDoctor(isCreateMode ? "" : doctorId);
+  const { data: analytics, isLoading: analyticsLoading } = useDoctorAnalytics(isCreateMode ? "" : doctorId);
+  const { data: profileViews, isLoading: viewsLoading } = useDoctorProfileViews(isCreateMode ? "" : doctorId, 50);
   const { data: organizationsData } = useOrganizations({ status: 'approved' });
   const { data: specialtiesData } = useServices();
   const addToClinicMutation = useAddDoctorToClinic();
   const updateMutation = useUpdateDoctor();
+  const createMutation = useCreateDoctor();
   
   // Clinic editing state
   const [editingClinicId, setEditingClinicId] = useState<string | null>(null);
@@ -82,7 +92,29 @@ export default function DoctorDetailPage() {
 
   // Initialize form fields from doctor data
   useEffect(() => {
-    if (doctor && !isEditMode) {
+    if (isCreateMode) {
+      // Reset all fields for create mode
+      setUsername('');
+      setPassword('');
+      setPhone('');
+      setEmail('');
+      setFirstName('');
+      setFirstNameAr('');
+      setLastName('');
+      setLastNameAr('');
+      setBio('');
+      setBioAr('');
+      setSpecialtyId('');
+      setLicenseNumber('');
+      setExperienceYears('');
+      setAddress('');
+      setLatitude('');
+      setLongitude('');
+      setWhatsapp('');
+      setUniversity('');
+      setAvatarFile(null);
+      setAvatarPreview(null);
+    } else if (doctor && !isEditMode) {
       const user = doctor.user || {};
       const specialty = doctor.specialty || {};
       
@@ -134,46 +166,84 @@ export default function DoctorDetailPage() {
   };
 
   const handleSave = () => {
-    const formData = new FormData();
-    
-    // User fields
-    if (phone) formData.append('phone', phone);
-    if (email) formData.append('email', email);
-    if (firstName) formData.append('first_name', firstName);
-    if (firstNameAr) formData.append('first_name_ar', firstNameAr);
-    if (lastName) formData.append('last_name', lastName);
-    if (lastNameAr) formData.append('last_name_ar', lastNameAr);
-    if (bio) formData.append('bio', bio);
-    if (bioAr) formData.append('bio_ar', bioAr);
-    
-    // Doctor fields
-    if (specialtyId) formData.append('specialty_id', specialtyId);
-    if (licenseNumber) formData.append('license_number', licenseNumber);
-    if (experienceYears) formData.append('experience_years', experienceYears);
-    if (address) formData.append('address', address);
-    if (latitude) formData.append('latitude', latitude);
-    if (longitude) formData.append('longitude', longitude);
-    if (whatsapp) formData.append('whatsapp', whatsapp);
-    if (university) formData.append('university', university);
-    
-    // Avatar
-    if (avatarFile) {
-      formData.append('avatar', avatarFile);
-    }
-
-    updateMutation.mutate(
-      { doctorId, data: formData },
-      {
-        onSuccess: () => {
-          setIsEditMode(false);
-        },
+    if (isCreateMode) {
+      // Create mode - use FormData with username and password
+      const formData = new FormData();
+      formData.append('username', username);
+      formData.append('password', password);
+      formData.append('phone', phone);
+      if (email) formData.append('email', email);
+      formData.append('firstName', firstName);
+      if (firstNameAr) formData.append('firstNameAr', firstNameAr);
+      formData.append('lastName', lastName);
+      if (lastNameAr) formData.append('lastNameAr', lastNameAr);
+      if (bio) formData.append('bio', bio);
+      if (bioAr) formData.append('bio_ar', bioAr);
+      if (specialtyId) formData.append('specialtyId', specialtyId);
+      if (licenseNumber) formData.append('licenseNumber', licenseNumber);
+      if (experienceYears) formData.append('experienceYears', experienceYears);
+      if (address) formData.append('address', address);
+      if (latitude) formData.append('latitude', latitude);
+      if (longitude) formData.append('longitude', longitude);
+      if (whatsapp) formData.append('whatsapp', whatsapp);
+      if (university) formData.append('university', university);
+      if (avatarFile) {
+        formData.append('avatar', avatarFile);
       }
-    );
+
+      createMutation.mutate(formData, {
+        onSuccess: (newDoctor) => {
+          // Redirect to the new doctor's detail page
+          setLocation(`/doctors/${newDoctor.id}`);
+        },
+      });
+    } else {
+      // Update mode
+      const formData = new FormData();
+      
+      // User fields
+      if (phone) formData.append('phone', phone);
+      if (email) formData.append('email', email);
+      if (firstName) formData.append('first_name', firstName);
+      if (firstNameAr) formData.append('first_name_ar', firstNameAr);
+      if (lastName) formData.append('last_name', lastName);
+      if (lastNameAr) formData.append('last_name_ar', lastNameAr);
+      if (bio) formData.append('bio', bio);
+      if (bioAr) formData.append('bio_ar', bioAr);
+      
+      // Doctor fields
+      if (specialtyId) formData.append('specialty_id', specialtyId);
+      if (licenseNumber) formData.append('license_number', licenseNumber);
+      if (experienceYears) formData.append('experience_years', experienceYears);
+      if (address) formData.append('address', address);
+      if (latitude) formData.append('latitude', latitude);
+      if (longitude) formData.append('longitude', longitude);
+      if (whatsapp) formData.append('whatsapp', whatsapp);
+      if (university) formData.append('university', university);
+      
+      // Avatar
+      if (avatarFile) {
+        formData.append('avatar', avatarFile);
+      }
+
+      updateMutation.mutate(
+        { doctorId, data: formData },
+        {
+          onSuccess: () => {
+            setIsEditMode(false);
+          },
+        }
+      );
+    }
   };
 
   const handleCancel = () => {
-    // Reset form to original values
-    if (doctor) {
+    if (isCreateMode) {
+      // For create mode, navigate back to doctors list
+      setLocation("/doctors");
+    } else {
+      // Reset form to original values
+      if (doctor) {
       const user = doctor.user || {};
       const specialty = doctor.specialty || {};
       
@@ -207,8 +277,9 @@ export default function DoctorDetailPage() {
       setUniversity(doctor.university || '');
       setAvatarPreview(user.avatar_url || doctor.avatar_url || null);
       setAvatarFile(null);
+      }
+      setIsEditMode(false);
     }
-    setIsEditMode(false);
   };
 
   const handleAddToClinic = () => {
@@ -225,7 +296,7 @@ export default function DoctorDetailPage() {
     }
   };
 
-  if (doctorLoading) {
+  if (!isCreateMode && doctorLoading) {
     return (
       <DashboardLayout>
         <div className="flex justify-center items-center h-64">
@@ -235,7 +306,7 @@ export default function DoctorDetailPage() {
     );
   }
 
-  if (!doctor) {
+  if (!isCreateMode && !doctor) {
     return (
       <DashboardLayout>
         <div className="text-center py-12">
@@ -245,31 +316,36 @@ export default function DoctorDetailPage() {
     );
   }
 
-  const user = doctor.user || {};
-  const isApproved = doctor.is_approved || doctor.isApproved;
-  const isVip = doctor.is_vip || doctor.isVip;
+  const user = doctor?.user || {};
+  const isApproved = doctor?.is_approved || doctor?.isApproved;
+  const isVip = doctor?.is_vip || doctor?.isVip;
 
   return (
     <DashboardLayout>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setLocation("/doctors")}
-            className="gap-2"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back
-          </Button>
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setLocation("/doctors")}
+              className="gap-2"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back
+            </Button>
+            {isCreateMode && (
+              <h1 className="text-3xl font-display font-bold text-foreground">Create New Doctor</h1>
+            )}
+          </div>
           <div className="flex items-center gap-2">
             {isEditMode ? (
               <>
                 <Button
                   variant="outline"
                   onClick={handleCancel}
-                  disabled={updateMutation.isPending}
+                  disabled={isCreateMode ? createMutation.isPending : updateMutation.isPending}
                   className="gap-2"
                 >
                   <X className="w-4 h-4" />
@@ -277,25 +353,27 @@ export default function DoctorDetailPage() {
                 </Button>
                 <Button
                   onClick={handleSave}
-                  disabled={updateMutation.isPending}
+                  disabled={isCreateMode ? createMutation.isPending : updateMutation.isPending}
                   className="gap-2"
                 >
-                  {updateMutation.isPending ? (
+                  {(isCreateMode ? createMutation.isPending : updateMutation.isPending) ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
                   ) : (
                     <Save className="w-4 h-4" />
                   )}
-                  Save Changes
+                  {isCreateMode ? "Create Doctor" : "Save Changes"}
                 </Button>
               </>
             ) : (
-              <Button
-                onClick={() => setIsEditMode(true)}
-                className="gap-2"
-              >
-                <Edit className="w-4 h-4" />
-                Edit Doctor
-              </Button>
+              !isCreateMode && (
+                <Button
+                  onClick={() => setIsEditMode(true)}
+                  className="gap-2"
+                >
+                  <Edit className="w-4 h-4" />
+                  Edit Doctor
+                </Button>
+              )
             )}
           </div>
         </div>
@@ -342,21 +420,23 @@ export default function DoctorDetailPage() {
                     <div className="space-y-3">
                       <div className="grid grid-cols-2 gap-3">
                         <div>
-                          <Label htmlFor="firstName">First Name (EN)</Label>
+                          <Label htmlFor="firstName">First Name (EN) *</Label>
                           <Input
                             id="firstName"
                             value={firstName}
                             onChange={(e) => setFirstName(e.target.value)}
                             className="mt-1"
+                            required
                           />
                         </div>
                         <div>
-                          <Label htmlFor="lastName">Last Name (EN)</Label>
+                          <Label htmlFor="lastName">Last Name (EN) *</Label>
                           <Input
                             id="lastName"
                             value={lastName}
                             onChange={(e) => setLastName(e.target.value)}
                             className="mt-1"
+                            required
                           />
                         </div>
                         <div>
@@ -418,14 +498,53 @@ export default function DoctorDetailPage() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {isCreateMode && isEditMode && (
+                <>
+                  <div>
+                    <Label htmlFor="username">Username *</Label>
+                    <Input
+                      id="username"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, ''))}
+                      required
+                      minLength={3}
+                      maxLength={50}
+                      placeholder="doctor123"
+                      pattern="[a-z0-9]{3,50}"
+                      className="mt-1"
+                    />
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Alphanumeric only, 3-50 characters. Used for login.
+                    </p>
+                  </div>
+                  <div>
+                    <Label htmlFor="password">Password *</Label>
+                    <Input
+                      id="password"
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      minLength={6}
+                      maxLength={100}
+                      placeholder="••••••••"
+                      className="mt-1"
+                    />
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Minimum 6 characters. Share securely with the doctor.
+                    </p>
+                  </div>
+                </>
+              )}
               <div>
-                <Label htmlFor="phone">Phone</Label>
+                <Label htmlFor="phone">Phone {isCreateMode && isEditMode && "*"}</Label>
                 {isEditMode ? (
                   <Input
                     id="phone"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     className="mt-1"
+                    required={isCreateMode}
                   />
                 ) : (
                   <div className="flex items-center gap-2 text-muted-foreground mt-1">
@@ -632,11 +751,11 @@ export default function DoctorDetailPage() {
         </Card>
 
         {/* Analytics Cards */}
-        {analyticsLoading ? (
+        {!isCreateMode && analyticsLoading ? (
           <div className="flex justify-center py-8">
             <Loader2 className="w-6 h-6 animate-spin text-primary" />
           </div>
-        ) : analytics && (
+        ) : !isCreateMode && analytics && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Appointments */}
             <Card>
@@ -729,7 +848,7 @@ export default function DoctorDetailPage() {
         )}
 
         {/* Clinics Section */}
-        {doctor.clinic_doctors && doctor.clinic_doctors.length > 0 && (
+        {!isCreateMode && doctor?.clinic_doctors && doctor.clinic_doctors.length > 0 && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -1391,6 +1510,7 @@ export default function DoctorDetailPage() {
         )}
 
         {/* Add to Clinic Section */}
+        {!isCreateMode && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -1441,8 +1561,10 @@ export default function DoctorDetailPage() {
             </div>
           </CardContent>
         </Card>
+        )}
 
         {/* Recent Profile Views */}
+        {!isCreateMode && (
         <Card>
           <CardHeader>
             <CardTitle>Recent Profile Views</CardTitle>
@@ -1498,6 +1620,7 @@ export default function DoctorDetailPage() {
             )}
           </CardContent>
         </Card>
+        )}
       </div>
     </DashboardLayout>
   );

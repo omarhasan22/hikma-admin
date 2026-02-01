@@ -29,6 +29,7 @@ function AppRouter() {
         <Route path="/login" component={Login} />
         <Route path="/" component={Dashboard} />
         <Route path="/doctors" component={DoctorsPage} />
+        <Route path="/doctors/new" component={DoctorDetailPage} />
         <Route path="/doctors/:doctorId" component={DoctorDetailPage} />
         <Route path="/organizations" component={OrganizationsPage} />
         <Route path="/users" component={UsersPage} />
