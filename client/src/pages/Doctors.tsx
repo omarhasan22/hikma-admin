@@ -56,7 +56,7 @@ export default function DoctorsPage() {
   const [isAddToClinicOpen, setIsAddToClinicOpen] = useState(false);
   const [doctorToAdd, setDoctorToAdd] = useState<string | null>(null);
   const [selectedClinicId, setSelectedClinicId] = useState<string>('');
-  const [selectedRole, setSelectedRole] = useState<'admin' | 'member'>('member');
+  const [selectedRole, setSelectedRole] = useState<'admin' | 'doctor'>('doctor');
 
   const { data: doctorsData, isLoading } = useDoctors({
     search: search || undefined,
@@ -101,7 +101,7 @@ export default function DoctorsPage() {
   const handleOpenAddToClinic = (doctorId: string) => {
     setDoctorToAdd(doctorId);
     setSelectedClinicId('');
-    setSelectedRole('member');
+    setSelectedRole('doctor');
     setIsAddToClinicOpen(true);
   };
 
@@ -390,12 +390,12 @@ export default function DoctorsPage() {
                               </div>
                               <div>
                                 <Label htmlFor="role-select">Role</Label>
-                                <Select value={selectedRole} onValueChange={(value: 'admin' | 'member') => setSelectedRole(value)}>
+                                <Select value={selectedRole} onValueChange={(value: 'admin' | 'doctor') => setSelectedRole(value)}>
                                   <SelectTrigger id="role-select">
                                     <SelectValue />
                                   </SelectTrigger>
                                   <SelectContent>
-                                    <SelectItem value="member">Member</SelectItem>
+                                    <SelectItem value="doctor">Doctor</SelectItem>
                                     <SelectItem value="admin">Admin</SelectItem>
                                   </SelectContent>
                                 </Select>

@@ -180,7 +180,7 @@ export function useAddDoctorToClinic() {
    const { toast } = useToast();
 
    return useMutation({
-      mutationFn: async ({ clinicId, doctorId, role = 'member' }: { clinicId: string; doctorId: string; role?: 'admin' | 'member' }) => {
+      mutationFn: async ({ clinicId, doctorId, role = 'doctor' }: { clinicId: string; doctorId: string; role?: 'admin' | 'doctor' | 'secretary' | 'nurse' | 'assistant' }) => {
          const url = buildUrl(api.organizations.addDoctor.path, { clinicId });
          const res = await apiFetch(url, {
             method: api.organizations.addDoctor.method,
@@ -189,9 +189,10 @@ export function useAddDoctorToClinic() {
          });
          return api.organizations.addDoctor.responses[201].parse(await res.json());
       },
-      onSuccess: () => {
+      onSuccess: (_, variables) => {
          queryClient.invalidateQueries({ queryKey: [api.organizations.list.path] });
-         toast({ title: "Success", description: "Doctor added to clinic successfully" });
+         queryClient.invalidateQueries({ queryKey: [api.organizations.getUsers?.path || '/api/clinics/:clinicId/doctors', variables.clinicId] });
+         toast({ title: "Success", description: "User added to clinic successfully" });
       },
       onError: (err) => toast({ variant: "destructive", title: "Error", description: err.message })
    });

@@ -9,6 +9,7 @@ import Login from "@/pages/Login";
 import DoctorsPage from "@/pages/Doctors";
 import DoctorDetailPage from "@/pages/DoctorDetail";
 import OrganizationsPage from "@/pages/Organizations";
+import ClinicUsersPage from "@/pages/ClinicUsers";
 import UsersPage from "@/pages/Users";
 import SpecialtiesPage from "@/pages/Specialties";
 import SlidersPage from "@/pages/Sliders";
@@ -32,6 +33,7 @@ function AppRouter() {
         <Route path="/doctors/new" component={DoctorDetailPage} />
         <Route path="/doctors/:doctorId" component={DoctorDetailPage} />
         <Route path="/organizations" component={OrganizationsPage} />
+        <Route path="/organizations/:clinicId/users" component={ClinicUsersPage} />
         <Route path="/users" component={UsersPage} />
         <Route path="/specialties" component={SpecialtiesPage} />
         <Route path="/content/sliders" component={SlidersPage} />

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useLocation } from "wouter";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { 
   useOrganizations, 
@@ -30,6 +31,7 @@ import { Badge } from "@/components/ui/badge";
 import { Search, Loader2, CheckCircle, XCircle, Ban, Trash2, Building2, Plus } from "lucide-react";
 
 export default function OrganizationsPage() {
+  const [, setLocation] = useLocation();
   const [filter, setFilter] = useState<'all' | 'pending' | 'approved' | 'suspended'>('all');
   const [search, setSearch] = useState("");
   const [rejectReason, setRejectReason] = useState("");
@@ -162,7 +164,11 @@ export default function OrganizationsPage() {
                 {filteredOrgs.map((org) => {
                   const status = org.status || (org.is_approved ? 'approved' : 'pending');
                   return (
-                    <TableRow key={org.id} className="hover:bg-muted/20 border-b border-border last:border-0 transition-colors">
+                    <TableRow 
+                      key={org.id} 
+                      className="hover:bg-muted/20 border-b border-border last:border-0 transition-colors cursor-pointer"
+                      onClick={() => setLocation(`/organizations/${org.id}/users`)}
+                    >
                       <TableCell className="font-medium pl-6">
                         <div className="flex items-center gap-2">
                           <Building2 className="w-4 h-4 text-muted-foreground" />
@@ -187,7 +193,7 @@ export default function OrganizationsPage() {
                           <Badge variant="outline" className="bg-gray-50 text-gray-600 border-gray-200">Rejected</Badge>
                         )}
                       </TableCell>
-                      <TableCell className="text-right pr-6">
+                      <TableCell className="text-right pr-6" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-end gap-2">
                           {status === 'pending' && (
                             <>

@@ -567,7 +567,7 @@ export const api = {
       path: '/api/clinics/:clinicId/doctors',
       input: z.object({
         doctorId: z.string().uuid(),
-        role: z.enum(['admin', 'member']).default('member')
+        role: z.enum(['admin', 'doctor', 'secretary', 'nurse', 'assistant']).default('doctor')
       }),
       responses: {
         201: z.object({
@@ -581,6 +581,104 @@ export const api = {
         }),
         400: errorSchemas.validation,
         401: errorSchemas.unauthorized,
+      },
+    },
+    getUsers: {
+      method: 'GET' as const,
+      path: '/api/clinics/:clinicId/doctors',
+      responses: {
+        200: z.object({
+          status: z.string(),
+          error: z.string(),
+          errorCode: z.string(),
+          result: z.array(z.object({
+            id: z.string(),
+            is_primary: z.boolean(),
+            joined_at: z.string(),
+            clinic_user_roles: z.array(z.object({
+              role: z.string()
+            })),
+            users: z.object({
+              id: z.string(),
+              first_name: z.string().nullable(),
+              last_name: z.string().nullable(),
+              email: z.string().nullable(),
+              avatar_url: z.string().nullable(),
+              specialty_id: z.string().nullable(),
+              experience_years: z.number().nullable(),
+              rating_average: z.number().nullable(),
+              rating_count: z.number().nullable(),
+              is_approved: z.boolean().nullable(),
+              priority: z.number().nullable(),
+            }).nullable()
+          }))
+        }),
+        404: errorSchemas.notFound,
+      },
+    },
+    removeUser: {
+      method: 'DELETE' as const,
+      path: '/api/clinics/:clinicId/doctors/:doctorId',
+      responses: {
+        200: z.object({
+          status: z.string(),
+          error: z.string(),
+          errorCode: z.string(),
+          result: z.object({
+            message: z.string()
+          })
+        }),
+        400: errorSchemas.validation,
+        401: errorSchemas.unauthorized,
+        404: errorSchemas.notFound,
+      },
+    },
+    updateUserRole: {
+      method: 'PUT' as const,
+      path: '/api/clinics/:clinicId/doctors/:doctorId/role',
+      input: z.object({
+        role: z.enum(['admin', 'doctor', 'secretary', 'nurse', 'assistant'])
+      }),
+      responses: {
+        200: z.object({
+          status: z.string(),
+          error: z.string(),
+          errorCode: z.string(),
+          result: z.object({
+            message: z.string(),
+            membership: z.any()
+          })
+        }),
+        400: errorSchemas.validation,
+        401: errorSchemas.unauthorized,
+        404: errorSchemas.notFound,
+      },
+    },
+  },
+  staff: {
+    add: {
+      method: 'POST' as const,
+      path: '/api/staff',
+      input: z.object({
+        userId: z.string().uuid().optional(),
+        phone: z.string().optional(),
+        firstName: z.string().optional(),
+        lastName: z.string().optional(),
+        email: z.string().email().optional().nullable(),
+        role: z.enum(['secretary', 'nurse', 'assistant']),
+        permissions: z.record(z.any()).optional(),
+        clinicId: z.string().uuid().optional().nullable(),
+      }),
+      responses: {
+        201: z.object({
+          status: z.string(),
+          error: z.string(),
+          errorCode: z.string(),
+          result: z.any()
+        }),
+        400: errorSchemas.validation,
+        401: errorSchemas.unauthorized,
+        403: errorSchemas.unauthorized,
       },
     },
   },

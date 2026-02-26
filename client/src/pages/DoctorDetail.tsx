@@ -31,7 +31,7 @@ export default function DoctorDetailPage() {
   const shouldStartInEditMode = searchParams.get('edit') === 'true';
   
   const [selectedClinicId, setSelectedClinicId] = useState<string>("");
-  const [selectedRole, setSelectedRole] = useState<'admin' | 'member'>('member');
+  const [selectedRole, setSelectedRole] = useState<'admin' | 'doctor'>('doctor');
   const [isEditMode, setIsEditMode] = useState(isCreateMode || shouldStartInEditMode); // Start in edit mode for create or if ?edit=true
 
   // Form state
@@ -289,7 +289,7 @@ export default function DoctorDetailPage() {
         {
           onSuccess: () => {
             setSelectedClinicId("");
-            setSelectedRole('member');
+            setSelectedRole('doctor');
           },
         }
       );
@@ -1537,12 +1537,12 @@ export default function DoctorDetailPage() {
               </div>
               <div>
                 <Label htmlFor="role-select">Role</Label>
-                <Select value={selectedRole} onValueChange={(value: 'admin' | 'member') => setSelectedRole(value)}>
+                <Select value={selectedRole} onValueChange={(value: 'admin' | 'doctor') => setSelectedRole(value)}>
                   <SelectTrigger id="role-select" className="mt-2">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="member">Member</SelectItem>
+                    <SelectItem value="doctor">Doctor</SelectItem>
                     <SelectItem value="admin">Admin</SelectItem>
                   </SelectContent>
                 </Select>
