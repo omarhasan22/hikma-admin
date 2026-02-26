@@ -46,7 +46,7 @@ export function useUpdateUserRole() {
    const { toast } = useToast();
 
    return useMutation({
-      mutationFn: async ({ clinicId, doctorId, role }: { clinicId: string; doctorId: string; role: 'admin' | 'doctor' | 'secretary' | 'nurse' | 'assistant' }) => {
+      mutationFn: async ({ clinicId, doctorId, role }: { clinicId: string; doctorId: string; role: 'admin' | 'doctor' | 'secretary' | 'nurse' | 'assistant' | 'owner' }) => {
          const url = buildUrl(api.organizations.updateUserRole.path, { clinicId, doctorId });
          const res = await apiFetch(url, {
             method: api.organizations.updateUserRole.method,

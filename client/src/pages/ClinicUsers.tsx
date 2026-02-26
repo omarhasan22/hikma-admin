@@ -65,7 +65,7 @@ export default function ClinicUsersPage() {
     name: string;
     roles: string[];
   } | null>(null);
-  const [newRole, setNewRole] = useState<'admin' | 'doctor' | 'secretary' | 'nurse' | 'assistant'>('doctor');
+  const [newRole, setNewRole] = useState<'admin' | 'doctor' | 'secretary' | 'nurse' | 'assistant' | 'owner'>('doctor');
   const [addUserId, setAddUserId] = useState("");
   const [addUserRole, setAddUserRole] = useState<'admin' | 'doctor' | 'secretary' | 'nurse' | 'assistant'>('doctor');
   const [addUserMode, setAddUserMode] = useState<'existing' | 'new'>('existing');
@@ -531,7 +531,6 @@ export default function ClinicUsersPage() {
                             variant="ghost"
                             className="h-8"
                             onClick={() => openUpdateRoleDialog(user)}
-                            disabled={hasOwnerRole}
                           >
                             <Edit className="w-4 h-4" />
                           </Button>
@@ -540,7 +539,6 @@ export default function ClinicUsersPage() {
                             variant="ghost"
                             className="h-8 text-destructive hover:text-destructive hover:bg-destructive/10"
                             onClick={() => openRemoveDialog(user)}
-                            disabled={hasOwnerRole}
                           >
                             <Trash2 className="w-4 h-4" />
                           </Button>
@@ -593,6 +591,7 @@ export default function ClinicUsersPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="owner">Owner</SelectItem>
                     <SelectItem value="admin">Admin</SelectItem>
                     <SelectItem value="doctor">Doctor</SelectItem>
                     <SelectItem value="secretary">Secretary</SelectItem>
@@ -601,7 +600,7 @@ export default function ClinicUsersPage() {
                   </SelectContent>
                 </Select>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Note: This will update the user's role. Owner role cannot be changed.
+                  Note: You can update any role, including owner.
                 </p>
               </div>
               <Button 
@@ -627,9 +626,9 @@ export default function ClinicUsersPage() {
                 Are you sure you want to remove <strong>{selectedUser?.name}</strong> from this clinic?
               </p>
               {selectedUser?.roles.includes('owner') && (
-                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
-                  <p className="text-sm text-amber-800">
-                    <strong>Warning:</strong> This user is an owner. Owners cannot be removed from clinics.
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <p className="text-sm text-blue-800">
+                    <strong>Note:</strong> This user is an owner. You can remove them if needed.
                   </p>
                 </div>
               )}
@@ -645,7 +644,7 @@ export default function ClinicUsersPage() {
                   variant="destructive" 
                   className="flex-1"
                   onClick={handleRemoveUser}
-                  disabled={selectedUser?.roles.includes('owner') || removeUserMutation.isPending}
+                  disabled={removeUserMutation.isPending}
                 >
                   {removeUserMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                   Remove

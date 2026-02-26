@@ -637,7 +637,7 @@ export const api = {
       method: 'PUT' as const,
       path: '/api/clinics/:clinicId/doctors/:doctorId/role',
       input: z.object({
-        role: z.enum(['admin', 'doctor', 'secretary', 'nurse', 'assistant'])
+        role: z.enum(['owner', 'admin', 'doctor', 'secretary', 'nurse', 'assistant'])
       }),
       responses: {
         200: z.object({
