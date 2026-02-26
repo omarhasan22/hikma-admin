@@ -2,8 +2,8 @@
 // Vite exposes env variables prefixed with VITE_ via import.meta.env
 // Make sure you have VITE_API_URL in your .env file in the project root
 //const API_BASE_URL = import.meta.env.VITE_API_URL;
-//const API_BASE_URL = "https://hikma-api-hg2q.onrender.com";
-const API_BASE_URL = "http://localhost:3000";
+const API_BASE_URL = "https://hikma-api-hg2q.onrender.com";
+//const API_BASE_URL = "http://localhost:3000";
 // 
 // Validate that API URL is set
 if (!API_BASE_URL) {
