@@ -5,7 +5,7 @@ import { useDoctor, useUpdateDoctor, useCreateDoctor } from "@/hooks/use-doctors
 import { useDoctorAnalytics, useDoctorProfileViews } from "@/hooks/use-doctor-analytics";
 import { useOrganizations, useAddDoctorToClinic } from "@/hooks/use-organizations";
 import { useAddClinicDoctorService, useUpdateClinicDoctorService, useDeleteClinicDoctorService } from "@/hooks/use-clinic-doctor-services";
-import { useSetClinicWorkingHours, useUpdateClinicWorkingHours, useDeleteClinicWorkingHours } from "@/hooks/use-clinic-working-hours";
+import { useSetClinicWorkingHours, useUpdateClinicWorkingHours, useDeleteClinicWorkingHours, useSetClinicWorkingHoursBulk } from "@/hooks/use-clinic-working-hours";
 import { useUpdateClinicDoctorSettings } from "@/hooks/use-clinic-doctor-settings";
 import { useServices } from "@/hooks/use-services";
 import { Loader2, ArrowLeft, User, Phone, Mail, MapPin, Calendar, Eye, Users, Star, CheckCircle, XCircle, Clock, Award, FileText, MessageCircle, Stethoscope, Globe, Building2, Edit, Briefcase, Clock as ClockIcon, Save, X, Upload, Trash2, Plus } from "lucide-react";
@@ -17,6 +17,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import { format } from "date-fns";
 
 export default function DoctorDetailPage() {
@@ -81,6 +83,13 @@ export default function DoctorDetailPage() {
   // Working hours form state (per day)
   const [workingHoursFormData, setWorkingHoursFormData] = useState<Record<string, { startTime: string; endTime: string; breakStart: string; breakEnd: string; isActive: boolean }>>({});
   
+  // Bulk working hours state (per clinic)
+  const [bulkWorkingHoursState, setBulkWorkingHoursState] = useState<Record<string, {
+    selectedDays: string[];
+    bulkHours: { startTime: string; endTime: string; breakStart: string; breakEnd: string; isActive: boolean };
+    isBulkMode: boolean;
+  }>>({});
+  
   // Mutations
   const addServiceMutation = useAddClinicDoctorService();
   const updateServiceMutation = useUpdateClinicDoctorService();
@@ -88,6 +97,7 @@ export default function DoctorDetailPage() {
   const setWorkingHoursMutation = useSetClinicWorkingHours();
   const updateWorkingHoursMutation = useUpdateClinicWorkingHours();
   const deleteWorkingHoursMutation = useDeleteClinicWorkingHours();
+  const setWorkingHoursBulkMutation = useSetClinicWorkingHoursBulk();
   const updateSettingsMutation = useUpdateClinicDoctorSettings();
 
   // Initialize form fields from doctor data
@@ -1293,7 +1303,7 @@ export default function DoctorDetailPage() {
 
                       {/* Working Hours */}
                       <div>
-                        <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center justify-between mb-4">
                           <h4 className="text-sm font-medium flex items-center gap-2">
                             <ClockIcon className="w-4 h-4" />
                             Working Hours
@@ -1302,149 +1312,339 @@ export default function DoctorDetailPage() {
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => setNewWorkingHours({ dayOfWeek: '', startTime: '', endTime: '', breakStart: '', breakEnd: '', isActive: true })}
+                              onClick={() => {
+                                const currentState = bulkWorkingHoursState[clinicId] || {
+                                  selectedDays: [],
+                                  bulkHours: { startTime: '', endTime: '', breakStart: '', breakEnd: '', isActive: true },
+                                  isBulkMode: false
+                                };
+                                setBulkWorkingHoursState({
+                                  ...bulkWorkingHoursState,
+                                  [clinicId]: { ...currentState, isBulkMode: !currentState.isBulkMode }
+                                });
+                              }}
                             >
-                              <Plus className="w-4 h-4 mr-2" />
-                              Add Working Hours
+                              {bulkWorkingHoursState[clinicId]?.isBulkMode ? (
+                                <>
+                                  <X className="w-4 h-4 mr-2" />
+                                  Close Bulk Mode
+                                </>
+                              ) : (
+                                <>
+                                  <Plus className="w-4 h-4 mr-2" />
+                                  Bulk Add Hours
+                                </>
+                              )}
                             </Button>
                           )}
                         </div>
-                        {newWorkingHours && (
-                          <div className="border rounded p-3 mb-2 space-y-2">
-                            <div className="grid grid-cols-2 gap-2">
-                              <div>
-                                <Label>Day</Label>
-                                <Select
-                                  value={newWorkingHours.dayOfWeek}
-                                  onValueChange={(value) => setNewWorkingHours({ ...newWorkingHours, dayOfWeek: value })}
-                                >
-                                  <SelectTrigger className="mt-1">
-                                    <SelectValue placeholder="Select day" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {Object.entries(dayNames).map(([key, name]) => (
-                                      <SelectItem key={key} value={key}>{name}</SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                              <div className="flex items-center gap-2 mt-6">
-                                <input
-                                  type="checkbox"
-                                  checked={newWorkingHours.isActive}
-                                  onChange={(e) => setNewWorkingHours({ ...newWorkingHours, isActive: e.target.checked })}
-                                />
-                                <Label>Active</Label>
-                              </div>
-                              <div>
-                                <Label>Start Time</Label>
-                                <Input
-                                  type="time"
-                                  value={newWorkingHours.startTime}
-                                  onChange={(e) => setNewWorkingHours({ ...newWorkingHours, startTime: e.target.value })}
-                                  className="mt-1"
-                                />
-                              </div>
-                              <div>
-                                <Label>End Time</Label>
-                                <Input
-                                  type="time"
-                                  value={newWorkingHours.endTime}
-                                  onChange={(e) => setNewWorkingHours({ ...newWorkingHours, endTime: e.target.value })}
-                                  className="mt-1"
-                                />
-                              </div>
-                              <div>
-                                <Label>Break Start (optional)</Label>
-                                <Input
-                                  type="time"
-                                  value={newWorkingHours.breakStart}
-                                  onChange={(e) => setNewWorkingHours({ ...newWorkingHours, breakStart: e.target.value })}
-                                  className="mt-1"
-                                />
-                              </div>
-                              <div>
-                                <Label>Break End (optional)</Label>
-                                <Input
-                                  type="time"
-                                  value={newWorkingHours.breakEnd}
-                                  onChange={(e) => setNewWorkingHours({ ...newWorkingHours, breakEnd: e.target.value })}
-                                  className="mt-1"
-                                />
-                              </div>
-                            </div>
-                            <div className="flex gap-2">
-                              <Button size="sm" onClick={handleAddWorkingHours} disabled={setWorkingHoursMutation.isPending}>
-                                {setWorkingHoursMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                                Save
-                              </Button>
-                              <Button size="sm" variant="outline" onClick={() => setNewWorkingHours(null)}>
-                                Cancel
-                              </Button>
-                            </div>
-                          </div>
-                        )}
-                        {workingHours.length > 0 ? (
-                          <div className="space-y-1">
-                            {workingHours
-                              .sort((a: any, b: any) => {
-                                const order = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
-                                return order.indexOf(a.day_of_week) - order.indexOf(b.day_of_week);
-                              })
-                              .map((wh: any) => {
-                                const isEditing = editingWorkingHoursDay === wh.day_of_week;
-                                const form = workingHoursFormData[wh.day_of_week] || {
-                                  startTime: wh.start_time || '',
-                                  endTime: wh.end_time || '',
-                                  breakStart: wh.break_start || '',
-                                  breakEnd: wh.break_end || '',
-                                  isActive: wh.is_active !== false
-                                };
-                                return (
-                                  <div key={wh.id} className="flex items-center justify-between text-sm border rounded p-2 relative">
-                                    {isEditing ? (
-                                      <div className="flex-1 grid grid-cols-5 gap-2 items-center">
-                                        <span className="font-medium">{dayNames[wh.day_of_week] || wh.day_of_week}</span>
-                                        <Input
-                                          type="time"
-                                          value={form.startTime}
-                                          onChange={(e) => setWorkingHoursFormData({
-                                            ...workingHoursFormData,
-                                            [wh.day_of_week]: { ...form, startTime: e.target.value }
-                                          })}
-                                        />
-                                        <Input
-                                          type="time"
-                                          value={form.endTime}
-                                          onChange={(e) => setWorkingHoursFormData({
-                                            ...workingHoursFormData,
-                                            [wh.day_of_week]: { ...form, endTime: e.target.value }
-                                          })}
-                                        />
-                                        <div className="flex items-center gap-1">
-                                          <input
-                                            type="checkbox"
-                                            checked={form.isActive}
-                                            onChange={(e) => setWorkingHoursFormData({
-                                              ...workingHoursFormData,
-                                              [wh.day_of_week]: { ...form, isActive: e.target.checked }
-                                            })}
+
+                        {/* Bulk Form */}
+                        {isEditingClinic && bulkWorkingHoursState[clinicId]?.isBulkMode && (
+                          <Card className="mb-4 border-primary/20 bg-primary/5">
+                            <CardContent className="pt-6">
+                              <div className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                  <h5 className="text-sm font-semibold">Bulk Add Working Hours</h5>
+                                  <div className="flex gap-2">
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => {
+                                        const weekdays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
+                                        const currentState = bulkWorkingHoursState[clinicId] || {
+                                          selectedDays: [],
+                                          bulkHours: { startTime: '09:00', endTime: '17:00', breakStart: '', breakEnd: '', isActive: true },
+                                          isBulkMode: true
+                                        };
+                                        setBulkWorkingHoursState({
+                                          ...bulkWorkingHoursState,
+                                          [clinicId]: { ...currentState, selectedDays: weekdays, bulkHours: { ...currentState.bulkHours, startTime: '09:00', endTime: '17:00' } }
+                                        });
+                                      }}
+                                    >
+                                      Weekdays 9-5
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => {
+                                        const weekends = ['saturday', 'sunday'];
+                                        const currentState = bulkWorkingHoursState[clinicId] || {
+                                          selectedDays: [],
+                                          bulkHours: { startTime: '10:00', endTime: '14:00', breakStart: '', breakEnd: '', isActive: true },
+                                          isBulkMode: true
+                                        };
+                                        setBulkWorkingHoursState({
+                                          ...bulkWorkingHoursState,
+                                          [clinicId]: { ...currentState, selectedDays: weekends, bulkHours: { ...currentState.bulkHours, startTime: '10:00', endTime: '14:00' } }
+                                        });
+                                      }}
+                                    >
+                                      Weekends 10-2
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => {
+                                        const allDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+                                        const currentState = bulkWorkingHoursState[clinicId] || {
+                                          selectedDays: [],
+                                          bulkHours: { startTime: '09:00', endTime: '17:00', breakStart: '', breakEnd: '', isActive: true },
+                                          isBulkMode: true
+                                        };
+                                        setBulkWorkingHoursState({
+                                          ...bulkWorkingHoursState,
+                                          [clinicId]: { ...currentState, selectedDays: allDays, bulkHours: { ...currentState.bulkHours, startTime: '09:00', endTime: '17:00' } }
+                                        });
+                                      }}
+                                    >
+                                      Full Week 9-5
+                                    </Button>
+                                  </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                  <div>
+                                    <Label>Start Time</Label>
+                                    <Input
+                                      type="time"
+                                      value={bulkWorkingHoursState[clinicId]?.bulkHours.startTime || ''}
+                                      onChange={(e) => {
+                                        const currentState = bulkWorkingHoursState[clinicId] || {
+                                          selectedDays: [],
+                                          bulkHours: { startTime: '', endTime: '', breakStart: '', breakEnd: '', isActive: true },
+                                          isBulkMode: true
+                                        };
+                                        setBulkWorkingHoursState({
+                                          ...bulkWorkingHoursState,
+                                          [clinicId]: { ...currentState, bulkHours: { ...currentState.bulkHours, startTime: e.target.value } }
+                                        });
+                                      }}
+                                      className="mt-1"
+                                    />
+                                  </div>
+                                  <div>
+                                    <Label>End Time</Label>
+                                    <Input
+                                      type="time"
+                                      value={bulkWorkingHoursState[clinicId]?.bulkHours.endTime || ''}
+                                      onChange={(e) => {
+                                        const currentState = bulkWorkingHoursState[clinicId] || {
+                                          selectedDays: [],
+                                          bulkHours: { startTime: '', endTime: '', breakStart: '', breakEnd: '', isActive: true },
+                                          isBulkMode: true
+                                        };
+                                        setBulkWorkingHoursState({
+                                          ...bulkWorkingHoursState,
+                                          [clinicId]: { ...currentState, bulkHours: { ...currentState.bulkHours, endTime: e.target.value } }
+                                        });
+                                      }}
+                                      className="mt-1"
+                                    />
+                                  </div>
+                                  <div>
+                                    <Label>Break Start (optional)</Label>
+                                    <Input
+                                      type="time"
+                                      value={bulkWorkingHoursState[clinicId]?.bulkHours.breakStart || ''}
+                                      onChange={(e) => {
+                                        const currentState = bulkWorkingHoursState[clinicId] || {
+                                          selectedDays: [],
+                                          bulkHours: { startTime: '', endTime: '', breakStart: '', breakEnd: '', isActive: true },
+                                          isBulkMode: true
+                                        };
+                                        setBulkWorkingHoursState({
+                                          ...bulkWorkingHoursState,
+                                          [clinicId]: { ...currentState, bulkHours: { ...currentState.bulkHours, breakStart: e.target.value } }
+                                        });
+                                      }}
+                                      className="mt-1"
+                                    />
+                                  </div>
+                                  <div>
+                                    <Label>Break End (optional)</Label>
+                                    <Input
+                                      type="time"
+                                      value={bulkWorkingHoursState[clinicId]?.bulkHours.breakEnd || ''}
+                                      onChange={(e) => {
+                                        const currentState = bulkWorkingHoursState[clinicId] || {
+                                          selectedDays: [],
+                                          bulkHours: { startTime: '', endTime: '', breakStart: '', breakEnd: '', isActive: true },
+                                          isBulkMode: true
+                                        };
+                                        setBulkWorkingHoursState({
+                                          ...bulkWorkingHoursState,
+                                          [clinicId]: { ...currentState, bulkHours: { ...currentState.bulkHours, breakEnd: e.target.value } }
+                                        });
+                                      }}
+                                      className="mt-1"
+                                    />
+                                  </div>
+                                </div>
+
+                                <div className="flex items-center gap-4">
+                                  <div className="flex items-center gap-2">
+                                    <Switch
+                                      checked={bulkWorkingHoursState[clinicId]?.bulkHours.isActive !== false}
+                                      onCheckedChange={(checked) => {
+                                        const currentState = bulkWorkingHoursState[clinicId] || {
+                                          selectedDays: [],
+                                          bulkHours: { startTime: '', endTime: '', breakStart: '', breakEnd: '', isActive: true },
+                                          isBulkMode: true
+                                        };
+                                        setBulkWorkingHoursState({
+                                          ...bulkWorkingHoursState,
+                                          [clinicId]: { ...currentState, bulkHours: { ...currentState.bulkHours, isActive: checked } }
+                                        });
+                                      }}
+                                    />
+                                    <Label>Active</Label>
+                                  </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                  <Label>Select Days</Label>
+                                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                    {Object.entries(dayNames).map(([key, name]) => {
+                                      const isSelected = bulkWorkingHoursState[clinicId]?.selectedDays.includes(key) || false;
+                                      return (
+                                        <div key={key} className="flex items-center space-x-2">
+                                          <Checkbox
+                                            id={`day-${clinicId}-${key}`}
+                                            checked={isSelected}
+                                            onCheckedChange={(checked) => {
+                                              const currentState = bulkWorkingHoursState[clinicId] || {
+                                                selectedDays: [],
+                                                bulkHours: { startTime: '', endTime: '', breakStart: '', breakEnd: '', isActive: true },
+                                                isBulkMode: true
+                                              };
+                                              const newSelectedDays = checked
+                                                ? [...currentState.selectedDays, key]
+                                                : currentState.selectedDays.filter(d => d !== key);
+                                              setBulkWorkingHoursState({
+                                                ...bulkWorkingHoursState,
+                                                [clinicId]: { ...currentState, selectedDays: newSelectedDays }
+                                              });
+                                            }}
                                           />
-                                          <span className="text-xs">Active</span>
+                                          <Label htmlFor={`day-${clinicId}-${key}`} className="text-sm font-normal cursor-pointer">
+                                            {name}
+                                          </Label>
                                         </div>
-                                        <div className="flex gap-1">
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+
+                                <div className="flex gap-2 pt-2">
+                                  <Button
+                                    size="sm"
+                                    onClick={() => {
+                                      const state = bulkWorkingHoursState[clinicId];
+                                      if (!state || state.selectedDays.length === 0 || !state.bulkHours.startTime || !state.bulkHours.endTime) {
+                                        alert('Please select at least one day and provide start and end times');
+                                        return;
+                                      }
+                                      const workingHours = state.selectedDays.map(day => ({
+                                        dayOfWeek: day,
+                                        startTime: state.bulkHours.startTime,
+                                        endTime: state.bulkHours.endTime,
+                                        breakStart: state.bulkHours.breakStart || null,
+                                        breakEnd: state.bulkHours.breakEnd || null,
+                                        isActive: state.bulkHours.isActive !== false
+                                      }));
+                                      setWorkingHoursBulkMutation.mutate({
+                                        doctorId,
+                                        clinicId,
+                                        workingHours
+                                      }, {
+                                        onSuccess: () => {
+                                          setBulkWorkingHoursState({
+                                            ...bulkWorkingHoursState,
+                                            [clinicId]: {
+                                              selectedDays: [],
+                                              bulkHours: { startTime: '', endTime: '', breakStart: '', breakEnd: '', isActive: true },
+                                              isBulkMode: false
+                                            }
+                                          });
+                                        }
+                                      });
+                                    }}
+                                    disabled={setWorkingHoursBulkMutation.isPending}
+                                  >
+                                    {setWorkingHoursBulkMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                                    Apply to Selected Days
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => {
+                                      setBulkWorkingHoursState({
+                                        ...bulkWorkingHoursState,
+                                        [clinicId]: {
+                                          selectedDays: [],
+                                          bulkHours: { startTime: '', endTime: '', breakStart: '', breakEnd: '', isActive: true },
+                                          isBulkMode: false
+                                        }
+                                      });
+                                    }}
+                                  >
+                                    Cancel
+                                  </Button>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        )}
+
+                        {/* Weekly View */}
+                        <div className="space-y-2">
+                          {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map((dayKey) => {
+                            const existingHours = workingHours.find((wh: any) => wh.day_of_week === dayKey);
+                            const isEditing = editingWorkingHoursDay === dayKey;
+                            const form = workingHoursFormData[dayKey] || (existingHours ? {
+                              startTime: existingHours.start_time || '',
+                              endTime: existingHours.end_time || '',
+                              breakStart: existingHours.break_start || '',
+                              breakEnd: existingHours.break_end || '',
+                              isActive: existingHours.is_active !== false
+                            } : {
+                              startTime: '',
+                              endTime: '',
+                              breakStart: '',
+                              breakEnd: '',
+                              isActive: true
+                            });
+
+                            return (
+                              <Card
+                                key={dayKey}
+                                className={`border transition-colors ${
+                                  existingHours?.is_active !== false
+                                    ? 'border-green-200 bg-green-50/50 dark:border-green-900 dark:bg-green-950/20'
+                                    : existingHours
+                                    ? 'border-orange-200 bg-orange-50/50 dark:border-orange-900 dark:bg-orange-950/20'
+                                    : 'border-border bg-card'
+                                }`}
+                              >
+                                <CardContent className="p-4">
+                                  {isEditing ? (
+                                    <div className="space-y-3">
+                                      <div className="flex items-center justify-between">
+                                        <h5 className="font-semibold text-sm">{dayNames[dayKey]}</h5>
+                                        <div className="flex gap-2">
                                           <Button
                                             size="sm"
-                                            className="h-6 text-xs"
-                                            onClick={() => handleSaveWorkingHours(wh.day_of_week)}
+                                            onClick={() => handleSaveWorkingHours(dayKey)}
                                             disabled={updateWorkingHoursMutation.isPending}
                                           >
+                                            {updateWorkingHoursMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                                             Save
                                           </Button>
                                           <Button
                                             size="sm"
                                             variant="outline"
-                                            className="h-6 text-xs"
                                             onClick={() => {
                                               setEditingWorkingHoursDay(null);
                                               setWorkingHoursFormData({});
@@ -1454,52 +1654,123 @@ export default function DoctorDetailPage() {
                                           </Button>
                                         </div>
                                       </div>
-                                    ) : (
-                                      <>
-                                        <span className="font-medium">{dayNames[wh.day_of_week] || wh.day_of_week}</span>
-                                        <div className="flex items-center gap-2">
-                                          {wh.is_active ? (
-                                            <>
-                                              <span>{wh.start_time} - {wh.end_time}</span>
-                                              {wh.break_start && wh.break_end && (
-                                                <span className="text-muted-foreground">
-                                                  (Break: {wh.break_start} - {wh.break_end})
-                                                </span>
-                                              )}
-                                            </>
-                                          ) : (
-                                            <span className="text-muted-foreground italic">Inactive</span>
+                                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                        <div>
+                                          <Label className="text-xs">Start Time</Label>
+                                          <Input
+                                            type="time"
+                                            value={form.startTime}
+                                            onChange={(e) => setWorkingHoursFormData({
+                                              ...workingHoursFormData,
+                                              [dayKey]: { ...form, startTime: e.target.value }
+                                            })}
+                                            className="mt-1"
+                                          />
+                                        </div>
+                                        <div>
+                                          <Label className="text-xs">End Time</Label>
+                                          <Input
+                                            type="time"
+                                            value={form.endTime}
+                                            onChange={(e) => setWorkingHoursFormData({
+                                              ...workingHoursFormData,
+                                              [dayKey]: { ...form, endTime: e.target.value }
+                                            })}
+                                            className="mt-1"
+                                          />
+                                        </div>
+                                        <div>
+                                          <Label className="text-xs">Break Start</Label>
+                                          <Input
+                                            type="time"
+                                            value={form.breakStart}
+                                            onChange={(e) => setWorkingHoursFormData({
+                                              ...workingHoursFormData,
+                                              [dayKey]: { ...form, breakStart: e.target.value }
+                                            })}
+                                            className="mt-1"
+                                          />
+                                        </div>
+                                        <div>
+                                          <Label className="text-xs">Break End</Label>
+                                          <Input
+                                            type="time"
+                                            value={form.breakEnd}
+                                            onChange={(e) => setWorkingHoursFormData({
+                                              ...workingHoursFormData,
+                                              [dayKey]: { ...form, breakEnd: e.target.value }
+                                            })}
+                                            className="mt-1"
+                                          />
+                                        </div>
+                                      </div>
+                                      <div className="flex items-center gap-2">
+                                        <Switch
+                                          checked={form.isActive}
+                                          onCheckedChange={(checked) => setWorkingHoursFormData({
+                                            ...workingHoursFormData,
+                                            [dayKey]: { ...form, isActive: checked }
+                                          })}
+                                        />
+                                        <Label>Active</Label>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <div className="flex items-center justify-between">
+                                      <div className="flex items-center gap-3">
+                                        <div className="font-semibold text-sm min-w-[100px]">{dayNames[dayKey]}</div>
+                                        {existingHours ? (
+                                          <div className="flex items-center gap-2">
+                                            {existingHours.is_active !== false ? (
+                                              <>
+                                                <Badge variant="outline" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                                                  {existingHours.start_time} - {existingHours.end_time}
+                                                </Badge>
+                                                {existingHours.break_start && existingHours.break_end && (
+                                                  <span className="text-xs text-muted-foreground">
+                                                    Break: {existingHours.break_start} - {existingHours.break_end}
+                                                  </span>
+                                                )}
+                                              </>
+                                            ) : (
+                                              <Badge variant="outline" className="bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">
+                                                Inactive
+                                              </Badge>
+                                            )}
+                                          </div>
+                                        ) : (
+                                          <span className="text-sm text-muted-foreground italic">Not set</span>
+                                        )}
+                                      </div>
+                                      {isEditingClinic && (
+                                        <div className="flex gap-1">
+                                          <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            className="h-8 w-8 p-0"
+                                            onClick={() => setEditingWorkingHoursDay(dayKey)}
+                                          >
+                                            <Edit className="w-4 h-4" />
+                                          </Button>
+                                          {existingHours && (
+                                            <Button
+                                              size="sm"
+                                              variant="ghost"
+                                              className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                                              onClick={() => handleDeleteWorkingHours(dayKey)}
+                                            >
+                                              <Trash2 className="w-4 h-4" />
+                                            </Button>
                                           )}
                                         </div>
-                                        {isEditingClinic && (
-                                          <div className="absolute top-1 right-1 flex gap-1">
-                                            <Button
-                                              size="sm"
-                                              variant="ghost"
-                                              className="h-6 w-6 p-0"
-                                              onClick={() => setEditingWorkingHoursDay(wh.day_of_week)}
-                                            >
-                                              <Edit className="w-3 h-3" />
-                                            </Button>
-                                            <Button
-                                              size="sm"
-                                              variant="ghost"
-                                              className="h-6 w-6 p-0 text-destructive"
-                                              onClick={() => handleDeleteWorkingHours(wh.day_of_week)}
-                                            >
-                                              <Trash2 className="w-3 h-3" />
-                                            </Button>
-                                          </div>
-                                        )}
-                                      </>
-                                    )}
-                                  </div>
-                                );
-                              })}
-                          </div>
-                        ) : (
-                          <p className="text-sm text-muted-foreground">No working hours configured</p>
-                        )}
+                                      )}
+                                    </div>
+                                  )}
+                                </CardContent>
+                              </Card>
+                            );
+                          })}
+                        </div>
                       </div>
                     </div>
                   );

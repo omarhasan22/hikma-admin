@@ -120,3 +120,39 @@ export function useDeleteClinicWorkingHours() {
     onError: (err) => toast({ variant: "destructive", title: "Error", description: err.message })
   });
 }
+
+export function useSetClinicWorkingHoursBulk() {
+  const queryClient = useQueryClient();
+  const token = useAuthStore(state => state.token);
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async ({ doctorId, clinicId, workingHours }: { doctorId: string; clinicId: string; workingHours: Array<{ dayOfWeek: string; startTime: string; endTime: string; breakStart?: string | null; breakEnd?: string | null; isActive?: boolean }> }) => {
+      const url = getApiUrl(buildUrl(api.clinicWorkingHours.createBulk.path, { doctorId, clinicId }));
+      const body = api.clinicWorkingHours.createBulk.input.parse({ workingHours });
+      const res = await fetch(url, {
+        method: api.clinicWorkingHours.createBulk.method,
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(body),
+        credentials: "include",
+      });
+
+      if (!res.ok) {
+        const text = (await res.text()) || res.statusText;
+        throw new Error(`${res.status}: ${text}`);
+      }
+
+      const response = api.clinicWorkingHours.createBulk.responses[201].parse(await res.json());
+      return response.result;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'doctors', variables.doctorId, 'clinics', variables.clinicId, 'working-hours'] });
+      queryClient.invalidateQueries({ queryKey: [api.doctors.getAdmin.path, variables.doctorId] });
+      toast({ title: "Success", description: "Working hours set successfully" });
+    },
+    onError: (err) => toast({ variant: "destructive", title: "Error", description: err.message })
+  });
+}

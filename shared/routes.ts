@@ -419,6 +419,28 @@ export const api = {
         }),
       },
     },
+    createBulk: {
+      method: 'POST' as const,
+      path: '/api/admin/doctors/:doctorId/clinics/:clinicId/working-hours/bulk',
+      input: z.object({
+        workingHours: z.array(z.object({
+          dayOfWeek: z.string(),
+          startTime: z.string(),
+          endTime: z.string(),
+          breakStart: z.string().nullable().optional(),
+          breakEnd: z.string().nullable().optional(),
+          isActive: z.boolean().optional(),
+        })),
+      }),
+      responses: {
+        201: z.object({
+          status: z.string(),
+          error: z.string(),
+          errorCode: z.string(),
+          result: z.any(),
+        }),
+      },
+    },
   },
   clinicDoctorSettings: {
     update: {
