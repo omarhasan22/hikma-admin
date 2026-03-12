@@ -3,6 +3,10 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { useEffect } from "react";
+import { api } from "@shared/routes";
+import { apiFetch } from "@/lib/api";
+import { useAuthStore } from "@/stores/authStore";
 import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/Dashboard";
 import Login from "@/pages/Login";
@@ -50,6 +54,36 @@ function AppRouter() {
 }
 
 function App() {
+  const setAuth = useAuthStore((s) => s.setAuth);
+  const setBootstrapped = useAuthStore((s) => s.setBootstrapped);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      try {
+        // Cookie-based session bootstrap: backend should read refresh/session cookie (httpOnly)
+        // and return a fresh access token.
+        const res = await apiFetch(api.auth.refresh.path, {
+          method: api.auth.refresh.method,
+        });
+        const json = await res.json();
+        const parsed = api.auth.refresh.responses[200].safeParse(json);
+        if (parsed.success && parsed.data.data.accessToken && !cancelled) {
+          setAuth(parsed.data.data.accessToken, useAuthStore.getState().user);
+        }
+      } catch {
+        // Ignore bootstrap failures; user will be redirected to login by protected layouts.
+      } finally {
+        if (!cancelled) setBootstrapped(true);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [setAuth, setBootstrapped]);
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>

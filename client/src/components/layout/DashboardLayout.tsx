@@ -5,13 +5,22 @@ import { useEffect } from "react";
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const token = useAuthStore(state => state.token);
+  const bootstrapped = useAuthStore(state => state.bootstrapped);
   const [, setLocation] = useLocation();
 
   useEffect(() => {
-    if (!token) {
+    if (bootstrapped && !token) {
       setLocation("/login");
     }
-  }, [token, setLocation]);
+  }, [bootstrapped, token, setLocation]);
+
+  if (!bootstrapped) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-muted/30">
+        <div className="text-sm text-muted-foreground">Loading...</div>
+      </div>
+    );
+  }
 
   if (!token) return null;
 

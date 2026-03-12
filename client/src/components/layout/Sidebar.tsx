@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { useAuthStore } from "@/hooks/use-auth";
+import { useLogout } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
 import { 
   LayoutDashboard, 
@@ -28,7 +28,7 @@ const NAV_ITEMS = [
 
 export function Sidebar() {
   const [location] = useLocation();
-  const logout = useAuthStore(state => state.logout);
+  const logoutMutation = useLogout();
 
   return (
     <aside className="fixed left-0 top-0 h-screen w-64 bg-card border-r border-border flex flex-col z-50 transition-all duration-300">
@@ -65,7 +65,8 @@ export function Sidebar() {
 
       <div className="p-4 border-t border-border bg-muted/20">
         <button
-          onClick={logout}
+          onClick={() => logoutMutation.mutate()}
+          disabled={logoutMutation.isPending}
           className="flex items-center gap-3 px-4 py-3 w-full rounded-xl text-destructive hover:bg-destructive/10 transition-colors font-medium"
         >
           <LogOut className="w-5 h-5" />

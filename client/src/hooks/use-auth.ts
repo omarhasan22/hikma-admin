@@ -1,33 +1,11 @@
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 import { useMutation } from '@tanstack/react-query';
 import { api, buildUrl } from '@shared/routes';
 import { type User } from '@shared/schema';
 import { useToast } from '@/hooks/use-toast';
 import { apiFetch } from '@/lib/api';
+import { useAuthStore } from "@/stores/authStore";
 
-interface AuthState {
-  token: string | null;
-  refreshToken: string | null;
-  user: User | null;
-  setAuth: (token: string, refreshToken: string | null, user: User) => void;
-  logout: () => void;
-}
-
-export const useAuthStore = create<AuthState>()(
-  persist(
-    (set) => ({
-      token: null,
-      refreshToken: null,
-      user: null,
-      setAuth: (token, refreshToken, user) => set({ token, refreshToken, user }),
-      logout: () => set({ token: null, refreshToken: null, user: null }),
-    }),
-    {
-      name: 'auth-storage',
-    }
-  )
-);
+export { useAuthStore };
 
 export function useLogin() {
   const { toast } = useToast();
@@ -46,7 +24,7 @@ export function useLogin() {
     },
     onSuccess: (data) => {
       if (data.status === "ok" && data.result) {
-        const { accessToken, refreshToken, user, profile } = data.result;
+        const { accessToken, user, profile } = data.result;
         // Use profile if available, otherwise use user
         const userData = profile || user;
         if (userData && accessToken) {
@@ -66,7 +44,7 @@ export function useLogin() {
             isActive: userData.isActive !== undefined ? userData.isActive : (profile?.isActive !== undefined ? profile.isActive : true),
             createdAt: userData.createdAt ? new Date(userData.createdAt) : (profile?.createdAt ? new Date(profile.createdAt) : new Date()),
           };
-          setAuth(accessToken, refreshToken || null, mappedUser);
+          setAuth(accessToken, mappedUser);
           toast({ title: "Welcome!", description: "Successfully logged in as superadmin." });
         } else {
           toast({ variant: "destructive", title: "Login Error", description: "Invalid response from server" });
@@ -84,21 +62,17 @@ export function useLogin() {
 }
 
 export function useRefreshToken() {
-  const { refreshToken, setAuth, user } = useAuthStore();
+  const { setAuth, user } = useAuthStore();
 
   return useMutation({
     mutationFn: async () => {
-      if (!refreshToken) throw new Error("No refresh token available");
       const res = await apiFetch(api.auth.refresh.path, {
         method: api.auth.refresh.method,
-        body: api.auth.refresh.input.parse({ refreshToken }),
       });
       return api.auth.refresh.responses[200].parse(await res.json());
     },
     onSuccess: (data) => {
-      if (user) {
-        setAuth(data.data.accessToken, data.data.refreshToken || refreshToken, user);
-      }
+      setAuth(data.data.accessToken, user);
     }
   });
 }

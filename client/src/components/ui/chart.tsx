@@ -76,28 +76,29 @@ const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
     return null
   }
 
-  return (
-    <style
-      dangerouslySetInnerHTML={{
-        __html: Object.entries(THEMES)
-          .map(
-            ([theme, prefix]) => `
-${prefix} [data-chart=${id}] {
-${colorConfig
-  .map(([key, itemConfig]) => {
-    const color =
-      itemConfig.theme?.[theme as keyof typeof itemConfig.theme] ||
-      itemConfig.color
-    return color ? `  --color-${key}: ${color};` : null
-  })
-  .join("\n")}
-}
-`
-          )
-          .join("\n"),
-      }}
-    />
-  )
+  const safeIdent = (value: string) => value.replace(/[^a-zA-Z0-9_-]/g, "_")
+  const safeCssValue = (value: string) => (/[;{}]/.test(value) ? "" : value)
+
+  const safeId = safeIdent(id)
+  const css = Object.entries(THEMES)
+    .map(([theme, prefix]) => {
+      const vars = colorConfig
+        .map(([key, itemConfig]) => {
+          const colorRaw =
+            itemConfig.theme?.[theme as keyof typeof itemConfig.theme] ||
+            itemConfig.color
+          const color = colorRaw ? safeCssValue(colorRaw) : ""
+          const safeKey = safeIdent(key)
+          return color ? `  --color-${safeKey}: ${color};` : null
+        })
+        .filter(Boolean)
+        .join("\n")
+
+      return `\n${prefix} [data-chart=\"${safeId}\"] {\n${vars}\n}\n`
+    })
+    .join("\n")
+
+  return <style>{css}</style>
 }
 
 const ChartTooltip = RechartsPrimitive.Tooltip

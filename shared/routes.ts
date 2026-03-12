@@ -44,7 +44,7 @@ export const api = {
     refresh: {
       method: 'POST' as const,
       path: '/api/auth/refresh',
-      input: z.object({ refreshToken: z.string() }),
+      input: z.object({ refreshToken: z.string().optional() }).optional(),
       responses: {
         200: z.object({
           data: z.object({
