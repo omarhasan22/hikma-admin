@@ -31,6 +31,9 @@ export default function DoctorDetailPage() {
   // Check for edit query parameter in URL
   const searchParams = new URLSearchParams(location.split('?')[1] || '');
   const shouldStartInEditMode = searchParams.get('edit') === 'true';
+  const assignClinicId = isCreateMode ? searchParams.get('assignClinicId') : null;
+  const assignRoleParam = isCreateMode ? searchParams.get('assignRole') : null;
+  const returnToParam = isCreateMode ? searchParams.get('returnTo') : null;
   
   const [selectedClinicId, setSelectedClinicId] = useState<string>("");
   const [selectedRole, setSelectedRole] = useState<'admin' | 'doctor'>('doctor');
@@ -203,8 +206,34 @@ export default function DoctorDetailPage() {
 
       createMutation.mutate(formData, {
         onSuccess: (newDoctor) => {
+          const newDoctorId = String((newDoctor as any)?.id ?? "");
+          const assignRole = assignRoleParam === "admin" ? "admin" : assignRoleParam === "doctor" ? "doctor" : null;
+          const safeReturnTo =
+            returnToParam && returnToParam.startsWith("/")
+              ? returnToParam
+              : assignClinicId
+              ? `/organizations/${assignClinicId}/users`
+              : null;
+
+          if (assignClinicId && assignRole && newDoctorId) {
+            addToClinicMutation.mutate(
+              { clinicId: assignClinicId, doctorId: newDoctorId, role: assignRole },
+              {
+                onSuccess: () => {
+                  if (safeReturnTo) setLocation(safeReturnTo);
+                  else setLocation(`/organizations/${assignClinicId}/users`);
+                },
+                onError: () => {
+                  // Provider created, but clinic assignment failed; stay on provider detail for manual fix.
+                  setLocation(`/doctors/${newDoctorId}`);
+                },
+              }
+            );
+            return;
+          }
+
           // Redirect to the new doctor's detail page
-          setLocation(`/doctors/${newDoctor.id}`);
+          setLocation(`/doctors/${newDoctorId}`);
         },
       });
     } else {

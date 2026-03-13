@@ -389,9 +389,14 @@ function ClinicForm({
           </SelectTrigger>
           <SelectContent>
             {doctors.map((doctor) => {
-              const displayName = doctor.user?.full_name || 
-                `${doctor.user?.first_name || ''} ${doctor.user?.last_name || ''}`.trim() || 
-                `Doctor ${doctor.id.substring(0, 8)}`;
+              const name = (
+                doctor.user?.full_name ||
+                doctor.full_name ||
+                `${doctor.user?.first_name || doctor.first_name || ''} ${doctor.user?.last_name || doctor.last_name || ''}`.trim()
+              ).trim();
+              const phone = doctor.user?.phone || doctor.phone || "";
+              const base = (name || phone || "Unknown doctor").trim();
+              const displayName = phone ? `${base} • ${phone}` : base;
               return (
                 <SelectItem key={doctor.id} value={doctor.id}>
                   {displayName}
@@ -531,4 +536,3 @@ function ClinicForm({
     </form>
   );
 }
-

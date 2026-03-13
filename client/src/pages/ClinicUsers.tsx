@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useRoute, Link } from "wouter";
+import { useEffect, useMemo, useState } from "react";
+import { useLocation, useRoute, Link } from "wouter";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { 
   useClinicUsers,
@@ -10,6 +10,7 @@ import { useAddDoctorToClinic } from "@/hooks/use-organizations";
 import { useAddStaff } from "@/hooks/use-staff";
 import { useOrganization } from "@/hooks/use-organizations";
 import { useDoctors } from "@/hooks/use-doctors";
+import { useUsers } from "@/hooks/use-users";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -19,16 +20,20 @@ import {
 import { 
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger 
 } from "@/components/ui/dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { 
+  Check,
   Search, 
   Loader2, 
   Plus, 
@@ -36,8 +41,8 @@ import {
   Edit, 
   Trash2, 
   User,
-  Building2,
-  Star
+  Star,
+  ChevronsUpDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -50,9 +55,109 @@ const ROLE_COLORS: Record<string, string> = {
   assistant: "bg-gray-50 text-gray-600 border-gray-200",
 };
 
+type ComboboxOption = {
+  value: string;
+  label: string;
+  secondary?: string;
+  keywords?: string;
+};
+
+function SearchableCombobox({
+  value,
+  onValueChange,
+  options,
+  placeholder,
+  searchPlaceholder,
+  emptyText,
+  query,
+  onQueryChange,
+  disabled,
+}: {
+  value: string;
+  onValueChange: (value: string) => void;
+  options: ComboboxOption[];
+  placeholder: string;
+  searchPlaceholder: string;
+  emptyText: string;
+  query: string;
+  onQueryChange: (query: string) => void;
+  disabled?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+
+  const selected = useMemo(
+    () => options.find((o) => o.value === value) || null,
+    [options, value],
+  );
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          className="w-full justify-between"
+          disabled={disabled}
+        >
+          <span className="truncate">
+            {selected ? selected.label : placeholder}
+          </span>
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+        <Command shouldFilter>
+          <CommandInput
+            placeholder={searchPlaceholder}
+            value={query}
+            onValueChange={onQueryChange}
+          />
+          <CommandList>
+            <CommandEmpty>{emptyText}</CommandEmpty>
+            <CommandGroup>
+              {options.map((option) => {
+                const itemValue = `${option.label} ${option.secondary || ""} ${option.keywords || ""}`.trim();
+                return (
+                  <CommandItem
+                    key={option.value}
+                    value={itemValue}
+                    onSelect={() => {
+                      onValueChange(option.value);
+                      onQueryChange("");
+                      setOpen(false);
+                    }}
+                  >
+                    <Check
+                      className={cn(
+                        "h-4 w-4",
+                        option.value === value ? "opacity-100" : "opacity-0",
+                      )}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="truncate">{option.label}</div>
+                      {option.secondary ? (
+                        <div className="text-xs text-muted-foreground truncate">
+                          {option.secondary}
+                        </div>
+                      ) : null}
+                    </div>
+                  </CommandItem>
+                );
+              })}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 export default function ClinicUsersPage() {
   const [match, params] = useRoute("/organizations/:clinicId/users");
   const clinicId = params?.clinicId || "";
+  const [, setLocation] = useLocation();
   
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("all");
@@ -66,9 +171,14 @@ export default function ClinicUsersPage() {
     roles: string[];
   } | null>(null);
   const [newRole, setNewRole] = useState<'admin' | 'doctor' | 'secretary' | 'nurse' | 'assistant' | 'owner'>('doctor');
-  const [addUserId, setAddUserId] = useState("");
   const [addUserRole, setAddUserRole] = useState<'admin' | 'doctor' | 'secretary' | 'nurse' | 'assistant'>('doctor');
   const [addUserMode, setAddUserMode] = useState<'existing' | 'new'>('existing');
+  const [selectedProviderId, setSelectedProviderId] = useState("");
+  const [selectedStaffUserId, setSelectedStaffUserId] = useState("");
+  const [providerQuery, setProviderQuery] = useState("");
+  const [staffUserQuery, setStaffUserQuery] = useState("");
+  const [providerSearch, setProviderSearch] = useState("");
+  const [staffUserSearch, setStaffUserSearch] = useState("");
   const [newUserPhone, setNewUserPhone] = useState("");
   const [newUserFirstName, setNewUserFirstName] = useState("");
   const [newUserLastName, setNewUserLastName] = useState("");
@@ -76,13 +186,36 @@ export default function ClinicUsersPage() {
 
   const { data: clinicData, isLoading: clinicLoading } = useOrganization(clinicId);
   const { data: usersData, isLoading: usersLoading } = useClinicUsers(clinicId);
-  const { data: doctorsData } = useDoctors({ isApproved: 'true' });
+  const { data: doctorsData, isLoading: doctorsLoading } = useDoctors({
+    isApproved: "true",
+    search: providerSearch || undefined,
+    limit: "50",
+  });
+  const { data: allUsersData, isLoading: allUsersLoading } = useUsers({
+    search: staffUserSearch || undefined,
+    limit: "50",
+  });
   const addUserMutation = useAddDoctorToClinic();
   const addStaffMutation = useAddStaff();
   const updateRoleMutation = useUpdateUserRole();
   const removeUserMutation = useRemoveUserFromClinic();
 
   const users = usersData?.data || [];
+
+  const clinicUserIds = useMemo(() => {
+    const ids = users.map((u) => u.users?.id).filter(Boolean) as string[];
+    return new Set(ids);
+  }, [users]);
+
+  useEffect(() => {
+    const t = setTimeout(() => setProviderSearch(providerQuery.trim()), 250);
+    return () => clearTimeout(t);
+  }, [providerQuery]);
+
+  useEffect(() => {
+    const t = setTimeout(() => setStaffUserSearch(staffUserQuery.trim()), 250);
+    return () => clearTimeout(t);
+  }, [staffUserQuery]);
   
   // Filter users
   const filteredUsers = users.filter((user) => {
@@ -96,27 +229,77 @@ export default function ClinicUsersPage() {
     return matchesSearch && matchesRole;
   });
 
+  const isStaffRole = ['secretary', 'nurse', 'assistant'].includes(addUserRole);
+
+  const providerOptions: ComboboxOption[] = useMemo(() => {
+    const doctors = (doctorsData?.data || []) as any[];
+    return doctors
+      .filter((doctor) => {
+        const doctorId = String(doctor?.id || "");
+        const userId = String(doctor?.user?.id || doctor?.user_id || doctor?.userId || "");
+        if (!doctorId && !userId) return false;
+        return !clinicUserIds.has(doctorId) && (!userId || !clinicUserIds.has(userId));
+      })
+      .map((doctor) => {
+        const user = doctor?.user || {};
+        const fullName =
+          user?.full_name ||
+          doctor?.full_name ||
+          `${user?.first_name || doctor?.first_name || ""} ${user?.last_name || doctor?.last_name || ""}`.trim();
+        const phone = user?.phone || doctor?.phone || "";
+        const labelBase = (fullName || phone || "Unknown provider").trim();
+        const label = phone ? `${labelBase} • ${phone}` : labelBase;
+        return {
+          value: String(doctor?.id),
+          label,
+          secondary: user?.email || doctor?.email || undefined,
+          keywords: [fullName, phone, user?.email, doctor?.email].filter(Boolean).join(" "),
+        };
+      });
+  }, [clinicUserIds, doctorsData?.data]);
+
+  const staffUserOptions: ComboboxOption[] = useMemo(() => {
+    const allUsers = (allUsersData?.data || []) as any[];
+    return allUsers
+      .filter((u) => {
+        const userId = String(u?.id || "");
+        if (!userId) return false;
+        return !clinicUserIds.has(userId);
+      })
+      .map((u) => {
+        const fullName = u?.full_name || u?.fullName || `${u?.first_name || ""} ${u?.last_name || ""}`.trim();
+        const phone = u?.phone || "";
+        const labelBase = (fullName || phone || "Unknown user").trim();
+        const label = phone ? `${labelBase} • ${phone}` : labelBase;
+        return {
+          value: String(u?.id),
+          label,
+          secondary: u?.email || undefined,
+          keywords: [fullName, phone, u?.email].filter(Boolean).join(" "),
+        };
+      });
+  }, [allUsersData?.data, clinicUserIds]);
+
   const handleAddUser = () => {
     // Staff roles (secretary, nurse, assistant) use the staff endpoint
     // Other roles (admin, doctor) use the clinic doctor endpoint
-    const isStaffRole = ['secretary', 'nurse', 'assistant'].includes(addUserRole);
-    
     if (isStaffRole) {
       // Use staff endpoint
       if (addUserMode === 'existing') {
-        if (!addUserId || !addUserRole) return;
+        if (!selectedStaffUserId || !addUserRole) return;
         addStaffMutation.mutate(
           {
-            userId: addUserId,
+            userId: selectedStaffUserId,
             role: addUserRole as 'secretary' | 'nurse' | 'assistant',
             clinicId: clinicId
           },
           {
             onSuccess: () => {
               setIsAddUserOpen(false);
-              setAddUserId("");
               setAddUserRole('doctor');
               setAddUserMode('existing');
+              setSelectedStaffUserId("");
+              setStaffUserQuery("");
             }
           }
         );
@@ -141,25 +324,28 @@ export default function ClinicUsersPage() {
               setNewUserEmail("");
               setAddUserRole('doctor');
               setAddUserMode('existing');
+              setSelectedStaffUserId("");
+              setStaffUserQuery("");
             }
           }
         );
       }
     } else {
       // Use clinic doctor endpoint for admin/doctor roles
-      if (!addUserId || !addUserRole) return;
+      if (!selectedProviderId || !addUserRole) return;
       addUserMutation.mutate(
         { 
           clinicId, 
-          doctorId: addUserId, 
+          doctorId: selectedProviderId, 
           role: addUserRole as 'admin' | 'doctor'
         },
         {
           onSuccess: () => {
             setIsAddUserOpen(false);
-            setAddUserId("");
             setAddUserRole('doctor');
             setAddUserMode('existing');
+            setSelectedProviderId("");
+            setProviderQuery("");
           }
         }
       );
@@ -277,6 +463,10 @@ export default function ClinicUsersPage() {
                   <Label htmlFor="role">Role *</Label>
                   <Select value={addUserRole} onValueChange={(value) => {
                     setAddUserRole(value as typeof addUserRole);
+                    setSelectedProviderId("");
+                    setSelectedStaffUserId("");
+                    setProviderQuery("");
+                    setStaffUserQuery("");
                     // For staff roles, allow new user creation
                     if (['secretary', 'nurse', 'assistant'].includes(value)) {
                       // Keep current mode or default to existing
@@ -317,33 +507,62 @@ export default function ClinicUsersPage() {
                 {/* Existing user mode */}
                 {addUserMode === 'existing' && (
                   <div>
-                    <Label htmlFor="user">User (Provider) *</Label>
-                    <Select value={addUserId} onValueChange={setAddUserId}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a provider" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {doctorsData?.data
-                          ?.filter(doctor => {
-                            // Filter out users already in this clinic
-                            const userIds = users.map(u => u.users?.id).filter(Boolean);
-                            return !userIds.includes(doctor.id);
-                          })
-                          .map((doctor) => {
-                            const displayName = doctor.user?.full_name || 
-                              `${doctor.user?.first_name || ''} ${doctor.user?.last_name || ''}`.trim() || 
-                              `User ${doctor.id.substring(0, 8)}`;
-                            return (
-                              <SelectItem key={doctor.id} value={doctor.id}>
-                                {displayName}
-                              </SelectItem>
-                            );
-                          })}
-                      </SelectContent>
-                    </Select>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Only approved providers can be added.
-                    </p>
+                    <Label htmlFor="user">
+                      {isStaffRole ? "User (Staff) *" : "Provider *"}
+                    </Label>
+                    {isStaffRole ? (
+                      <>
+                        <SearchableCombobox
+                          value={selectedStaffUserId}
+                          onValueChange={setSelectedStaffUserId}
+                          options={staffUserOptions}
+                          placeholder="Select a user (search by name or phone)"
+                          searchPlaceholder="Search users..."
+                          emptyText={allUsersLoading ? "Loading..." : "No users found."}
+                          query={staffUserQuery}
+                          onQueryChange={setStaffUserQuery}
+                          disabled={allUsersLoading}
+                        />
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Search by name or phone. Phone is shown to avoid picking the wrong user.
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <SearchableCombobox
+                          value={selectedProviderId}
+                          onValueChange={setSelectedProviderId}
+                          options={providerOptions}
+                          placeholder="Select a provider (search by name or phone)"
+                          searchPlaceholder="Search providers..."
+                          emptyText={doctorsLoading ? "Loading..." : "No providers found."}
+                          query={providerQuery}
+                          onQueryChange={setProviderQuery}
+                          disabled={doctorsLoading}
+                        />
+                        <div className="flex items-center justify-between gap-3 mt-2">
+                          <p className="text-sm text-muted-foreground">
+                            Only approved providers can be added.
+                          </p>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              const returnTo = `/organizations/${clinicId}/users`;
+                              const url =
+                                `/doctors/new?assignClinicId=${encodeURIComponent(clinicId)}` +
+                                `&assignRole=${encodeURIComponent(addUserRole)}` +
+                                `&returnTo=${encodeURIComponent(returnTo)}`;
+                              setLocation(url);
+                            }}
+                          >
+                            <Plus className="w-4 h-4 mr-2" />
+                            Create new provider
+                          </Button>
+                        </div>
+                      </>
+                    )}
                   </div>
                 )}
 
@@ -406,7 +625,7 @@ export default function ClinicUsersPage() {
                     addUserMutation.isPending || 
                     addStaffMutation.isPending ||
                     !addUserRole ||
-                    (addUserMode === 'existing' && !addUserId) ||
+                    (addUserMode === 'existing' && (isStaffRole ? !selectedStaffUserId : !selectedProviderId)) ||
                     (addUserMode === 'new' && (!newUserPhone || !newUserFirstName))
                   }
                 >
