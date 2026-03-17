@@ -676,6 +676,21 @@ export const api = {
         404: errorSchemas.notFound,
       },
     },
+    deleteUserRole: {
+      method: 'DELETE' as const,
+      path: '/api/clinics/:clinicId/members/:doctorId/roles/:role',
+      responses: {
+        200: z.object({
+          status: z.string(),
+          error: z.string(),
+          errorCode: z.string(),
+          result: z.any(),
+        }),
+        401: errorSchemas.unauthorized,
+        403: errorSchemas.unauthorized,
+        404: errorSchemas.notFound,
+      },
+    },
   },
   staff: {
     add: {

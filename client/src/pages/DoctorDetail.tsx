@@ -7,6 +7,7 @@ import { useOrganizations, useAddDoctorToClinic } from "@/hooks/use-organization
 import { useAddClinicDoctorService, useUpdateClinicDoctorService, useDeleteClinicDoctorService } from "@/hooks/use-clinic-doctor-services";
 import { useSetClinicWorkingHours, useUpdateClinicWorkingHours, useDeleteClinicWorkingHours, useSetClinicWorkingHoursBulk } from "@/hooks/use-clinic-working-hours";
 import { useUpdateClinicDoctorSettings } from "@/hooks/use-clinic-doctor-settings";
+import { useUpdateUserRole, useDeleteUserRole } from "@/hooks/use-clinic-users";
 import { useServices } from "@/hooks/use-services";
 import { Loader2, ArrowLeft, User, Phone, Mail, MapPin, Calendar, Eye, Users, Star, CheckCircle, XCircle, Clock, Award, FileText, MessageCircle, Stethoscope, Globe, Building2, Edit, Briefcase, Clock as ClockIcon, Save, X, Upload, Trash2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -102,6 +103,8 @@ export default function DoctorDetailPage() {
   const deleteWorkingHoursMutation = useDeleteClinicWorkingHours();
   const setWorkingHoursBulkMutation = useSetClinicWorkingHoursBulk();
   const updateSettingsMutation = useUpdateClinicDoctorSettings();
+  const updateUserRoleMutation = useUpdateUserRole();
+  const deleteUserRoleMutation = useDeleteUserRole();
 
   // Initialize form fields from doctor data
   useEffect(() => {
@@ -922,6 +925,7 @@ export default function DoctorDetailPage() {
                   };
 
                   const handleSaveClinicSettings = () => {
+                    const roleChanged = clinicForm.role !== (clinicDoctor.role || 'member');
                     updateSettingsMutation.mutate({
                       doctorId,
                       clinicId,
@@ -933,6 +937,9 @@ export default function DoctorDetailPage() {
                       }
                     }, {
                       onSuccess: () => {
+                        if (roleChanged && doctorId) {
+                          updateUserRoleMutation.mutate({ clinicId, doctorId, role: clinicForm.role as 'owner' | 'admin' | 'doctor' | 'secretary' | 'nurse' | 'assistant' });
+                        }
                         setEditingClinicId(null);
                         setClinicFormData({});
                       }
@@ -1053,9 +1060,27 @@ export default function DoctorDetailPage() {
                                 Primary
                               </Badge>
                             )}
-                            <Badge variant="outline">
-                              {clinicDoctor.role || 'member'}
-                            </Badge>
+                            <div className="flex items-center gap-1">
+                              <Badge variant="outline">
+                                {clinicDoctor.role || 'member'}
+                              </Badge>
+                              {clinicDoctor.role && doctorId && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6 text-destructive hover:text-destructive"
+                                  title="Delete role"
+                                  disabled={deleteUserRoleMutation.isPending}
+                                  onClick={() => {
+                                    if (window.confirm(`Remove role "${clinicDoctor.role}" from this provider?`)) {
+                                      deleteUserRoleMutation.mutate({ clinicId, doctorId, role: clinicDoctor.role! });
+                                    }
+                                  }}
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </Button>
+                              )}
+                            </div>
                           </div>
                           {clinic.address && (
                             <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
@@ -1112,7 +1137,9 @@ export default function DoctorDetailPage() {
                                       <SelectItem value="owner">Owner</SelectItem>
                                       <SelectItem value="admin">Admin</SelectItem>
                                       <SelectItem value="doctor">Doctor</SelectItem>
-                                      <SelectItem value="staff">Staff</SelectItem>
+                                      <SelectItem value="secretary">Secretary</SelectItem>
+                                      <SelectItem value="nurse">Nurse</SelectItem>
+                                      <SelectItem value="assistant">Assistant</SelectItem>
                                     </SelectContent>
                                   </Select>
                                 </div>

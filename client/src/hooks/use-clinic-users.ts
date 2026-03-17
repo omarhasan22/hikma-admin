@@ -62,3 +62,25 @@ export function useUpdateUserRole() {
       onError: (err) => toast({ variant: "destructive", title: "Error", description: err.message })
    });
 }
+
+export function useDeleteUserRole() {
+   const queryClient = useQueryClient();
+   const token = useAuthStore(state => state.token);
+   const { toast } = useToast();
+
+   return useMutation({
+      mutationFn: async ({ clinicId, doctorId, role }: { clinicId: string; doctorId: string; role: string }) => {
+         const url = buildUrl(api.organizations.deleteUserRole.path, { clinicId, doctorId, role });
+         const res = await apiFetch(url, {
+            method: api.organizations.deleteUserRole.method,
+            token,
+         });
+         return api.organizations.deleteUserRole.responses[200].parse(await res.json());
+      },
+      onSuccess: (_, variables) => {
+         queryClient.invalidateQueries({ queryKey: [api.organizations.getUsers.path, variables.clinicId] });
+         toast({ title: "Success", description: "Role removed successfully" });
+      },
+      onError: (err) => toast({ variant: "destructive", title: "Error", description: err.message })
+   });
+}
