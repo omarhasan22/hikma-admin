@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useRoute, Link } from "wouter";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { 
+import {
   useClinicUsers,
   useRemoveUserFromClinic,
-  useUpdateUserRole
+  useUpdateUserRole,
+  useDeleteUserRole
 } from "@/hooks/use-clinic-users";
 import { useAddDoctorToClinic } from "@/hooks/use-organizations";
 import { useAddStaff } from "@/hooks/use-staff";
@@ -198,6 +199,7 @@ export default function ClinicUsersPage() {
   const addUserMutation = useAddDoctorToClinic();
   const addStaffMutation = useAddStaff();
   const updateRoleMutation = useUpdateUserRole();
+  const deleteRoleMutation = useDeleteUserRole();
   const removeUserMutation = useRemoveUserFromClinic();
 
   const users = usersData?.data || [];
@@ -695,7 +697,11 @@ export default function ClinicUsersPage() {
                   const hasOwnerRole = isOwner(user);
                   
                   return (
-                    <TableRow key={user.id} className="hover:bg-muted/20 border-b border-border last:border-0 transition-colors">
+                    <TableRow
+                      key={user.id}
+                      className="hover:bg-muted/20 border-b border-border last:border-0 transition-colors cursor-pointer"
+                      onClick={() => user.users?.id && setLocation(`/doctors/${user.users.id}`)}
+                    >
                       <TableCell className="pl-6">
                         <div className="flex items-center gap-3">
                           <Avatar className="w-8 h-8">
@@ -743,18 +749,18 @@ export default function ClinicUsersPage() {
                           </Badge>
                         )}
                       </TableCell>
-                      <TableCell className="text-right pr-6">
+                      <TableCell className="text-right pr-6" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-end gap-2">
-                          <Button 
-                            size="sm" 
+                          <Button
+                            size="sm"
                             variant="ghost"
                             className="h-8"
                             onClick={() => openUpdateRoleDialog(user)}
                           >
                             <Edit className="w-4 h-4" />
                           </Button>
-                          <Button 
-                            size="sm" 
+                          <Button
+                            size="sm"
                             variant="ghost"
                             className="h-8 text-destructive hover:text-destructive hover:bg-destructive/10"
                             onClick={() => openRemoveDialog(user)}
@@ -793,13 +799,40 @@ export default function ClinicUsersPage() {
                 <Label>Current Roles</Label>
                 <div className="flex flex-wrap gap-1 mt-2">
                   {selectedUser?.roles.map((role) => (
-                    <Badge 
-                      key={role}
-                      variant="outline" 
-                      className={cn("capitalize", ROLE_COLORS[role] || "bg-gray-50 text-gray-600 border-gray-200")}
-                    >
-                      {role}
-                    </Badge>
+                    <div key={role} className="flex items-center gap-0.5">
+                      <Badge
+                        variant="outline"
+                        className={cn("capitalize", ROLE_COLORS[role] || "bg-gray-50 text-gray-600 border-gray-200")}
+                      >
+                        {role}
+                      </Badge>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-5 w-5 text-destructive hover:text-destructive"
+                        title={`Delete ${role} role`}
+                        disabled={deleteRoleMutation.isPending}
+                        onClick={() => {
+                          if (!selectedUser) return;
+                          deleteRoleMutation.mutate(
+                            { clinicId, doctorId: selectedUser.userId, role },
+                            {
+                              onSuccess: () => {
+                                const remaining = selectedUser.roles.filter(r => r !== role);
+                                if (remaining.length === 0) {
+                                  setIsUpdateRoleOpen(false);
+                                  setSelectedUser(null);
+                                } else {
+                                  setSelectedUser({ ...selectedUser, roles: remaining });
+                                }
+                              }
+                            }
+                          );
+                        }}
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </Button>
+                    </div>
                   ))}
                 </div>
               </div>
