@@ -69,10 +69,8 @@ export default function OrganizationsPage() {
   const [isApproveOpen, setIsApproveOpen] = useState(false);
   const [approveClinicId, setApproveClinicId] = useState<string | null>(null);
   const [approvePlanId, setApprovePlanId] = useState("");
-  const [approvePaygFeeOverride, setApprovePaygFeeOverride] = useState("");
   const [billingClinic, setBillingClinic] = useState<ClinicRecord | null>(null);
   const [planSelection, setPlanSelection] = useState("");
-  const [newPaygFeeOverride, setNewPaygFeeOverride] = useState("");
   const [invoiceNote, setInvoiceNote] = useState("");
 
   const { data: orgsData, isLoading } = useOrganizations({
@@ -102,10 +100,16 @@ export default function OrganizationsPage() {
   const subscription = subscriptionQuery.data;
   const defaultPlanId = billingPlans[0]?.id || "";
 
+  const formatPlanLabel = (plan: any) => {
+    const fixed = plan?.fixed_price != null ? `$${Number(plan.fixed_price).toFixed(2)} setup` : null;
+    const payg = plan?.payg_fee != null ? `$${Number(plan.payg_fee).toFixed(2)} / appt` : null;
+    const pricing = fixed && payg ? `${fixed} + ${payg}` : fixed || payg || "No pricing";
+    return `${plan?.name || "Plan"} (${pricing})`;
+  };
+
   const handleApproveClick = (clinicId: string) => {
     setApproveClinicId(clinicId);
     setApprovePlanId(defaultPlanId);
-    setApprovePaygFeeOverride("");
     setIsApproveOpen(true);
   };
 
@@ -117,7 +121,6 @@ export default function OrganizationsPage() {
       data: approvePlanId
         ? {
             planId: approvePlanId,
-            paygFeeOverride: approvePaygFeeOverride ? Number(approvePaygFeeOverride) : null,
           }
         : undefined,
     }, {
@@ -167,7 +170,6 @@ export default function OrganizationsPage() {
       isApproved: org.isApproved,
     });
     setPlanSelection("");
-    setNewPaygFeeOverride("");
     setInvoiceNote("");
   };
 
@@ -179,7 +181,6 @@ export default function OrganizationsPage() {
         clinicId: billingClinic.id,
         data: {
           planId: planSelection,
-          paygFeeOverride: newPaygFeeOverride ? Number(newPaygFeeOverride) : null,
         },
       });
       return;
@@ -486,22 +487,11 @@ export default function OrganizationsPage() {
                   <SelectContent>
                     {billingPlans.map((plan) => (
                       <SelectItem key={plan.id} value={plan.id}>
-                        {plan.name} {plan.type === "fixed" ? `(${plan.billing_period})` : "(PAYG)"}
+                        {formatPlanLabel(plan)}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>PAYG Fee Override</Label>
-                <Input
-                  placeholder="Optional, only for PAYG"
-                  value={approvePaygFeeOverride}
-                  onChange={(e) => setApprovePaygFeeOverride(e.target.value)}
-                  type="number"
-                  min="0"
-                  step="0.01"
-                />
               </div>
               <Button
                 className="w-full"
@@ -552,7 +542,16 @@ export default function OrganizationsPage() {
                   <CardTitle className="text-xl">Subscription</CardTitle>
                   <CardDescription>
                     {subscription
-                      ? `${subscription.type.toUpperCase()} plan, ${subscription.status} through ${new Date(subscription.current_period_end).toLocaleDateString()}`
+                      ? (() => {
+                          const end = subscription.current_period_end
+                            ? new Date(subscription.current_period_end).toLocaleDateString()
+                            : null;
+                          const cycle = end ? `PAYG monthly cycle through ${end}` : "No billing cycle (fixed-only)";
+                          const status = subscription.cancel_at_period_end
+                            ? `${subscription.status} (cancels at period end)`
+                            : subscription.status;
+                          return `${status} · ${cycle}`;
+                        })()
                       : "No subscription exists yet for this clinic."}
                   </CardDescription>
                 </CardHeader>
@@ -560,12 +559,12 @@ export default function OrganizationsPage() {
                   {subscription ? (
                     <div className="grid gap-3 md:grid-cols-3">
                       <MetricCard label="Current plan" value={subscription.plan?.name || "Unknown"} />
-                      <MetricCard label="Cycle" value={subscription.billing_period} />
+                      <MetricCard label="Cycle" value={subscription.current_period_end ? "Monthly" : "None"} />
                       <MetricCard label="Pending change" value={subscription.pending_plan?.name || "None"} />
                     </div>
                   ) : null}
 
-                  <div className="grid gap-4 md:grid-cols-[1fr_180px]">
+                  <div className="grid gap-4">
                     <div className="space-y-2">
                       <Label>{subscription ? "Queue next plan" : "Create subscription"}</Label>
                       <Select value={planSelection} onValueChange={setPlanSelection}>
@@ -575,22 +574,11 @@ export default function OrganizationsPage() {
                         <SelectContent>
                           {billingPlans.map((plan) => (
                             <SelectItem key={plan.id} value={plan.id}>
-                              {plan.name} {plan.type === "fixed" ? `(${plan.billing_period})` : "(PAYG)"}
+                              {formatPlanLabel(plan)}
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>PAYG override</Label>
-                      <Input
-                        value={newPaygFeeOverride}
-                        onChange={(e) => setNewPaygFeeOverride(e.target.value)}
-                        placeholder="Optional"
-                        type="number"
-                        min="0"
-                        step="0.01"
-                      />
                     </div>
                   </div>
 
@@ -599,7 +587,7 @@ export default function OrganizationsPage() {
                       {(createSubscriptionMutation.isPending || changePlanMutation.isPending) && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                       {subscription ? "Queue Plan Change" : "Create Subscription"}
                     </Button>
-                    {subscription?.cancel_at_period_end ? (
+                    {subscription?.status === "cancelled" || subscription?.cancel_at_period_end ? (
                       <Button
                         variant="outline"
                         onClick={() => billingClinic?.id && reactivateSubscriptionMutation.mutate(billingClinic.id)}
@@ -613,7 +601,7 @@ export default function OrganizationsPage() {
                         onClick={() => billingClinic?.id && cancelSubscriptionMutation.mutate(billingClinic.id)}
                         disabled={cancelSubscriptionMutation.isPending}
                       >
-                        Cancel at Period End
+                        {subscription.current_period_end ? "Cancel at Period End" : "Cancel Immediately"}
                       </Button>
                     ) : null}
                   </div>

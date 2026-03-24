@@ -18,19 +18,16 @@ export const errorSchemas = {
 };
 
 const clinicStatusSchema = z.enum(['pending', 'approved', 'rejected', 'suspended', 'disabled']);
-const subscriptionTypeSchema = z.enum(['fixed', 'payg']);
-const billingPeriodSchema = z.enum(['monthly', 'quarterly', 'yearly']);
 const subscriptionStatusSchema = z.enum(['active', 'past_due', 'cancelled']);
 const invoiceStatusSchema = z.enum(['draft', 'open', 'paid', 'overdue', 'void']);
+const invoiceKindSchema = z.enum(['fixed_initial', 'payg_monthly']);
 const chargeStatusSchema = z.enum(['pending', 'paid', 'reversed', 'waived', 'void', 'flagged']);
 
 const subscriptionPlanSchema = z.object({
   id: z.string().uuid(),
   name: z.string(),
   name_ar: z.string().nullable().optional(),
-  type: subscriptionTypeSchema,
-  billing_period: billingPeriodSchema,
-  price: z.number().nullable().optional(),
+  fixed_price: z.number().nullable().optional(),
   payg_fee: z.number().nullable().optional(),
   is_active: z.boolean().optional(),
 });
@@ -40,12 +37,9 @@ const clinicSubscriptionSchema = z.object({
   clinic_id: z.string().uuid(),
   plan_id: z.string().uuid(),
   owner_id: z.string().uuid(),
-  type: subscriptionTypeSchema,
-  billing_period: billingPeriodSchema,
   status: subscriptionStatusSchema,
-  current_period_start: z.string(),
-  current_period_end: z.string(),
-  payg_fee_override: z.number().nullable().optional(),
+  current_period_start: z.string().nullable().optional(),
+  current_period_end: z.string().nullable().optional(),
   cancel_at_period_end: z.boolean(),
   pending_plan_id: z.string().uuid().nullable().optional(),
   created_at: z.string().optional(),
@@ -63,6 +57,7 @@ const subscriptionInvoiceSchema = z.object({
   id: z.string().uuid(),
   invoice_number: z.string(),
   subscription_id: z.string().uuid(),
+  kind: invoiceKindSchema,
   period_start: z.string(),
   period_end: z.string(),
   currency: z.string(),
@@ -616,7 +611,6 @@ export const api = {
       input: z.object({
         planId: z.string().uuid().optional(),
         ownerId: z.string().uuid().optional(),
-        paygFeeOverride: z.number().nullable().optional(),
       }).optional(),
       responses: {
         200: z.object({
@@ -848,7 +842,6 @@ export const api = {
         input: z.object({
           planId: z.string().uuid(),
           ownerId: z.string().uuid().optional(),
-          paygFeeOverride: z.number().nullable().optional(),
         }),
         responses: {
           201: z.object({
@@ -866,8 +859,6 @@ export const api = {
         method: 'PUT' as const,
         path: '/api/admin/billing/clinics/:clinicId/subscription',
         input: z.object({
-          paygFeeOverride: z.number().nullable().optional(),
-          status: subscriptionStatusSchema.optional(),
           cancelAtPeriodEnd: z.boolean().optional(),
         }),
         responses: {
@@ -1082,14 +1073,16 @@ export const api = {
         create: {
           method: 'POST' as const,
           path: '/api/admin/billing/plans',
-          input: z.object({
-            name: z.string().min(1),
-            nameAr: z.string().nullable().optional(),
-            type: subscriptionTypeSchema,
-            billingPeriod: billingPeriodSchema,
-            price: z.number().min(0).optional(),
-            paygFee: z.number().min(0).optional(),
-          }),
+          input: z
+            .object({
+              name: z.string().min(1),
+              nameAr: z.string().nullable().optional(),
+              fixedPrice: z.number().min(0).nullable().optional(),
+              paygFee: z.number().min(0).nullable().optional(),
+            })
+            .refine((v) => v.fixedPrice != null || v.paygFee != null, {
+              message: 'At least one of fixedPrice or paygFee is required',
+            }),
           responses: {
             201: z.object({
               status: z.string(),
@@ -1108,7 +1101,7 @@ export const api = {
           input: z.object({
             name: z.string().min(1).optional(),
             nameAr: z.string().nullable().optional(),
-            price: z.number().min(0).nullable().optional(),
+            fixedPrice: z.number().min(0).nullable().optional(),
             paygFee: z.number().min(0).nullable().optional(),
             isActive: z.boolean().optional(),
           }),

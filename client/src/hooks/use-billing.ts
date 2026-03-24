@@ -106,7 +106,7 @@ export function useApproveOrganization() {
       data,
     }: {
       clinicId: string;
-      data?: { planId?: string; ownerId?: string; paygFeeOverride?: number | null };
+      data?: { planId?: string; ownerId?: string };
     }) => {
       const url = buildUrl(api.organizations.approve.path, { clinicId });
       const res = await apiFetch(url, {
@@ -166,7 +166,7 @@ export function useCreateClinicSubscription() {
       data,
     }: {
       clinicId: string;
-      data: { planId: string; ownerId?: string; paygFeeOverride?: number | null };
+      data: { planId: string; ownerId?: string };
     }) => {
       const url = buildUrl(api.organizations.subscription.create.path, { clinicId });
       const res = await apiFetch(url, {
@@ -199,9 +199,9 @@ export function useChangeClinicPlan() {
       });
       return api.organizations.subscription.changePlan.responses[200].parse(await res.json());
     },
-    onSuccess: (_, variables) => {
+    onSuccess: (res, variables) => {
       invalidateBillingQueries(queryClient, variables.clinicId);
-      toast({ title: "Success", description: "Plan change queued" });
+      toast({ title: "Success", description: res.result?.message || "Plan updated" });
     },
     onError: (err) => toast({ variant: "destructive", title: "Error", description: err.message }),
   });
@@ -221,9 +221,9 @@ export function useCancelClinicSubscription() {
       });
       return api.organizations.subscription.cancel.responses[200].parse(await res.json());
     },
-    onSuccess: (_, clinicId) => {
+    onSuccess: (res, clinicId) => {
       invalidateBillingQueries(queryClient, clinicId);
-      toast({ title: "Success", description: "Subscription will cancel at period end" });
+      toast({ title: "Success", description: res.result?.message || "Subscription updated" });
     },
     onError: (err) => toast({ variant: "destructive", title: "Error", description: err.message }),
   });
@@ -308,10 +308,8 @@ export function useCreatePlan() {
     mutationFn: async (input: {
       name: string;
       nameAr?: string | null;
-      type: 'fixed' | 'payg';
-      billingPeriod: 'monthly' | 'quarterly' | 'yearly';
-      price?: number;
-      paygFee?: number;
+      fixedPrice?: number | null;
+      paygFee?: number | null;
     }) => {
       const res = await apiFetch(api.organizations.adminBilling.plans.create.path, {
         method: api.organizations.adminBilling.plans.create.method,
@@ -340,7 +338,7 @@ export function useUpdatePlan() {
       data,
     }: {
       planId: string;
-      data: { name?: string; nameAr?: string | null; price?: number | null; paygFee?: number | null; isActive?: boolean };
+      data: { name?: string; nameAr?: string | null; fixedPrice?: number | null; paygFee?: number | null; isActive?: boolean };
     }) => {
       const url = buildUrl(api.organizations.adminBilling.plans.update.path, { planId });
       const res = await apiFetch(url, {
@@ -412,4 +410,3 @@ export function useWaiveInvoice() {
     onError: (err) => toast({ variant: "destructive", title: "Error", description: err.message }),
   });
 }
-
