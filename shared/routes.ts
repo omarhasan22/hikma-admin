@@ -17,6 +17,82 @@ export const errorSchemas = {
   }),
 };
 
+const clinicStatusSchema = z.enum(['pending', 'approved', 'rejected', 'suspended', 'disabled']);
+const subscriptionTypeSchema = z.enum(['fixed', 'payg']);
+const billingPeriodSchema = z.enum(['monthly', 'quarterly', 'yearly']);
+const subscriptionStatusSchema = z.enum(['active', 'past_due', 'cancelled']);
+const invoiceStatusSchema = z.enum(['draft', 'open', 'paid', 'overdue', 'void']);
+const chargeStatusSchema = z.enum(['pending', 'paid', 'reversed', 'waived', 'void', 'flagged']);
+
+const subscriptionPlanSchema = z.object({
+  id: z.string().uuid(),
+  name: z.string(),
+  name_ar: z.string().nullable().optional(),
+  type: subscriptionTypeSchema,
+  billing_period: billingPeriodSchema,
+  price: z.number().nullable().optional(),
+  payg_fee: z.number().nullable().optional(),
+  is_active: z.boolean().optional(),
+});
+
+const clinicSubscriptionSchema = z.object({
+  id: z.string().uuid(),
+  clinic_id: z.string().uuid(),
+  plan_id: z.string().uuid(),
+  owner_id: z.string().uuid(),
+  type: subscriptionTypeSchema,
+  billing_period: billingPeriodSchema,
+  status: subscriptionStatusSchema,
+  current_period_start: z.string(),
+  current_period_end: z.string(),
+  payg_fee_override: z.number().nullable().optional(),
+  cancel_at_period_end: z.boolean(),
+  pending_plan_id: z.string().uuid().nullable().optional(),
+  created_at: z.string().optional(),
+  updated_at: z.string().optional(),
+  plan: subscriptionPlanSchema.optional(),
+  pending_plan: subscriptionPlanSchema.nullable().optional(),
+  clinic: z.object({
+    id: z.string().uuid(),
+    name: z.string().nullable().optional(),
+    status: clinicStatusSchema.optional(),
+  }).optional(),
+});
+
+const subscriptionInvoiceSchema = z.object({
+  id: z.string().uuid(),
+  invoice_number: z.string(),
+  subscription_id: z.string().uuid(),
+  period_start: z.string(),
+  period_end: z.string(),
+  currency: z.string(),
+  amount: z.number(),
+  status: invoiceStatusSchema,
+  due_date: z.string(),
+  paid_at: z.string().nullable().optional(),
+  recorded_by: z.string().uuid().nullable().optional(),
+  notes: z.string().nullable().optional(),
+  created_at: z.string().optional(),
+  updated_at: z.string().optional(),
+  subscription: clinicSubscriptionSchema.partial().optional(),
+});
+
+const appointmentChargeSchema = z.object({
+  id: z.string().uuid(),
+  appointment_id: z.string().uuid(),
+  subscription_id: z.string().uuid(),
+  invoice_id: z.string().uuid().nullable().optional(),
+  currency: z.string(),
+  fee_amount: z.number(),
+  status: chargeStatusSchema,
+  triggered_at: z.string(),
+  settled_at: z.string().nullable().optional(),
+  notes: z.string().nullable().optional(),
+  created_at: z.string().optional(),
+  updated_at: z.string().optional(),
+  subscription: clinicSubscriptionSchema.partial().optional(),
+});
+
 export const api = {
   auth: {
     login: {
@@ -537,12 +613,21 @@ export const api = {
     approve: {
       method: 'POST' as const,
       path: '/api/admin/clinics/:clinicId/approve',
+      input: z.object({
+        planId: z.string().uuid().optional(),
+        ownerId: z.string().uuid().optional(),
+        paygFeeOverride: z.number().nullable().optional(),
+      }).optional(),
       responses: {
         200: z.object({
           status: z.string(),
           error: z.string(),
           errorCode: z.string(),
-          result: z.object({ message: z.string(), clinic: z.custom<typeof organizations.$inferSelect>() }),
+          result: z.object({
+            message: z.string(),
+            clinic: z.custom<typeof organizations.$inferSelect>(),
+            subscription: clinicSubscriptionSchema.optional(),
+          }),
         }),
       },
     },
@@ -569,6 +654,25 @@ export const api = {
           error: z.string(),
           errorCode: z.string(),
           result: z.object({ message: z.string(), clinic: z.custom<typeof organizations.$inferSelect>() }),
+        }),
+      },
+    },
+    setStatus: {
+      method: 'POST' as const,
+      path: '/api/admin/clinics/:clinicId/status',
+      input: z.object({
+        status: z.enum(['approved', 'disabled', 'suspended']),
+        reason: z.string().nullable().optional(),
+      }),
+      responses: {
+        200: z.object({
+          status: z.string(),
+          error: z.string(),
+          errorCode: z.string(),
+          result: z.object({
+            message: z.string(),
+            clinic: z.custom<typeof organizations.$inferSelect>(),
+          }),
         }),
       },
     },
@@ -689,6 +793,278 @@ export const api = {
         401: errorSchemas.unauthorized,
         403: errorSchemas.unauthorized,
         404: errorSchemas.notFound,
+      },
+    },
+    subscription: {
+      get: {
+        method: 'GET' as const,
+        path: '/api/clinics/:clinicId/subscription',
+        responses: {
+          200: z.object({
+            status: z.string(),
+            error: z.string(),
+            errorCode: z.string(),
+            result: clinicSubscriptionSchema.nullable(),
+          }),
+        },
+      },
+      invoices: {
+        method: 'GET' as const,
+        path: '/api/clinics/:clinicId/subscription/invoices',
+        input: z.object({
+          status: invoiceStatusSchema.optional(),
+          fromDate: z.string().optional(),
+          toDate: z.string().optional(),
+          limit: z.string().optional(),
+        }).optional(),
+        responses: {
+          200: z.object({
+            status: z.string(),
+            error: z.string(),
+            errorCode: z.string(),
+            result: z.array(subscriptionInvoiceSchema),
+          }),
+        },
+      },
+      charges: {
+        method: 'GET' as const,
+        path: '/api/clinics/:clinicId/subscription/charges',
+        input: z.object({
+          status: chargeStatusSchema.optional(),
+          limit: z.string().optional(),
+        }).optional(),
+        responses: {
+          200: z.object({
+            status: z.string(),
+            error: z.string(),
+            errorCode: z.string(),
+            result: z.array(appointmentChargeSchema),
+          }),
+        },
+      },
+      create: {
+        method: 'POST' as const,
+        path: '/api/admin/clinics/:clinicId/subscription',
+        input: z.object({
+          planId: z.string().uuid(),
+          ownerId: z.string().uuid().optional(),
+          paygFeeOverride: z.number().nullable().optional(),
+        }),
+        responses: {
+          201: z.object({
+            status: z.string(),
+            error: z.string(),
+            errorCode: z.string(),
+            result: z.object({
+              message: z.string(),
+              subscription: clinicSubscriptionSchema,
+            }),
+          }),
+        },
+      },
+      update: {
+        method: 'PUT' as const,
+        path: '/api/admin/clinics/:clinicId/subscription',
+        input: z.object({
+          paygFeeOverride: z.number().nullable().optional(),
+          status: subscriptionStatusSchema.optional(),
+          cancelAtPeriodEnd: z.boolean().optional(),
+        }),
+        responses: {
+          200: z.object({
+            status: z.string(),
+            error: z.string(),
+            errorCode: z.string(),
+            result: z.object({
+              message: z.string(),
+              subscription: clinicSubscriptionSchema,
+            }),
+          }),
+        },
+      },
+      changePlan: {
+        method: 'POST' as const,
+        path: '/api/admin/clinics/:clinicId/subscription/change-plan',
+        input: z.object({
+          newPlanId: z.string().uuid(),
+        }),
+        responses: {
+          200: z.object({
+            status: z.string(),
+            error: z.string(),
+            errorCode: z.string(),
+            result: z.object({
+              message: z.string(),
+              subscription: clinicSubscriptionSchema,
+            }),
+          }),
+        },
+      },
+      cancel: {
+        method: 'POST' as const,
+        path: '/api/admin/clinics/:clinicId/subscription/cancel',
+        responses: {
+          200: z.object({
+            status: z.string(),
+            error: z.string(),
+            errorCode: z.string(),
+            result: z.object({
+              message: z.string(),
+              subscription: clinicSubscriptionSchema,
+            }),
+          }),
+        },
+      },
+      reactivate: {
+        method: 'POST' as const,
+        path: '/api/admin/clinics/:clinicId/subscription/reactivate',
+        responses: {
+          200: z.object({
+            status: z.string(),
+            error: z.string(),
+            errorCode: z.string(),
+            result: z.object({
+              message: z.string(),
+              subscription: clinicSubscriptionSchema,
+            }),
+          }),
+        },
+      },
+    },
+    billingPlans: {
+      method: 'GET' as const,
+      path: '/api/subscription-plans',
+      responses: {
+        200: z.object({
+          status: z.string(),
+          error: z.string(),
+          errorCode: z.string(),
+          result: z.array(subscriptionPlanSchema),
+        }),
+      },
+    },
+    adminBilling: {
+      subscriptions: {
+        method: 'GET' as const,
+        path: '/api/admin/subscriptions',
+        input: z.object({
+          status: subscriptionStatusSchema.optional(),
+          limit: z.string().optional(),
+        }).optional(),
+        responses: {
+          200: z.object({
+            status: z.string(),
+            error: z.string(),
+            errorCode: z.string(),
+            result: z.array(clinicSubscriptionSchema),
+          }),
+        },
+      },
+      invoices: {
+        method: 'GET' as const,
+        path: '/api/admin/invoices',
+        input: z.object({
+          status: invoiceStatusSchema.optional(),
+          clinicId: z.string().uuid().optional(),
+          fromDate: z.string().optional(),
+          toDate: z.string().optional(),
+          limit: z.string().optional(),
+        }).optional(),
+        responses: {
+          200: z.object({
+            status: z.string(),
+            error: z.string(),
+            errorCode: z.string(),
+            result: z.array(subscriptionInvoiceSchema),
+          }),
+        },
+      },
+      summary: {
+        method: 'GET' as const,
+        path: '/api/admin/billing/summary',
+        responses: {
+          200: z.object({
+            status: z.string(),
+            error: z.string(),
+            errorCode: z.string(),
+            result: z.object({
+              totalRevenue: z.number(),
+              outstanding: z.number(),
+              overdueCount: z.number(),
+            }),
+          }),
+        },
+      },
+      payInvoice: {
+        method: 'POST' as const,
+        path: '/api/admin/invoices/:invoiceId/pay',
+        input: z.object({
+          notes: z.string().nullable().optional(),
+        }),
+        responses: {
+          200: z.object({
+            status: z.string(),
+            error: z.string(),
+            errorCode: z.string(),
+            result: z.object({
+              message: z.string(),
+              invoice: subscriptionInvoiceSchema,
+            }),
+          }),
+        },
+      },
+      waiveInvoice: {
+        method: 'POST' as const,
+        path: '/api/admin/invoices/:invoiceId/waive',
+        input: z.object({
+          notes: z.string().nullable().optional(),
+        }),
+        responses: {
+          200: z.object({
+            status: z.string(),
+            error: z.string(),
+            errorCode: z.string(),
+            result: z.object({
+              message: z.string(),
+              invoice: subscriptionInvoiceSchema,
+            }),
+          }),
+        },
+      },
+      flaggedCharges: {
+        method: 'GET' as const,
+        path: '/api/admin/charges',
+        input: z.object({
+          status: z.literal('flagged'),
+          limit: z.string().optional(),
+        }),
+        responses: {
+          200: z.object({
+            status: z.string(),
+            error: z.string(),
+            errorCode: z.string(),
+            result: z.array(appointmentChargeSchema),
+          }),
+        },
+      },
+      resolveCharge: {
+        method: 'POST' as const,
+        path: '/api/admin/charges/:chargeId/resolve',
+        input: z.object({
+          resolution: z.enum(['credit', 'ignore']),
+          notes: z.string().nullable().optional(),
+        }),
+        responses: {
+          200: z.object({
+            status: z.string(),
+            error: z.string(),
+            errorCode: z.string(),
+            result: z.object({
+              message: z.string(),
+              charge: appointmentChargeSchema,
+            }),
+          }),
+        },
       },
     },
   },
