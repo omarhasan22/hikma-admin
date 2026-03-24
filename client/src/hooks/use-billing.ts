@@ -282,6 +282,106 @@ export function usePayInvoice() {
   });
 }
 
+export function useAdminPlans(includeInactive = false) {
+  const token = useAuthStore((state) => state.token);
+
+  return useQuery({
+    queryKey: [api.organizations.adminBilling.plans.list.path, includeInactive],
+    queryFn: async () => {
+      const url = includeInactive
+        ? `${api.organizations.adminBilling.plans.list.path}?includeInactive=true`
+        : api.organizations.adminBilling.plans.list.path;
+      const res = await apiFetch(url, { token });
+      const data = api.organizations.adminBilling.plans.list.responses[200].parse(await res.json());
+      return data.result;
+    },
+    enabled: !!token,
+  });
+}
+
+export function useCreatePlan() {
+  const queryClient = useQueryClient();
+  const token = useAuthStore((state) => state.token);
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (input: {
+      name: string;
+      nameAr?: string | null;
+      type: 'fixed' | 'payg';
+      billingPeriod: 'monthly' | 'quarterly' | 'yearly';
+      price?: number;
+      paygFee?: number;
+    }) => {
+      const res = await apiFetch(api.organizations.adminBilling.plans.create.path, {
+        method: api.organizations.adminBilling.plans.create.method,
+        token,
+        body: api.organizations.adminBilling.plans.create.input.parse(input),
+      });
+      return api.organizations.adminBilling.plans.create.responses[201].parse(await res.json());
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [api.organizations.adminBilling.plans.list.path] });
+      queryClient.invalidateQueries({ queryKey: [api.organizations.billingPlans.path] });
+      toast({ title: 'Success', description: 'Plan created' });
+    },
+    onError: (err) => toast({ variant: 'destructive', title: 'Error', description: err.message }),
+  });
+}
+
+export function useUpdatePlan() {
+  const queryClient = useQueryClient();
+  const token = useAuthStore((state) => state.token);
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async ({
+      planId,
+      data,
+    }: {
+      planId: string;
+      data: { name?: string; nameAr?: string | null; price?: number | null; paygFee?: number | null; isActive?: boolean };
+    }) => {
+      const url = buildUrl(api.organizations.adminBilling.plans.update.path, { planId });
+      const res = await apiFetch(url, {
+        method: api.organizations.adminBilling.plans.update.method,
+        token,
+        body: api.organizations.adminBilling.plans.update.input.parse(data),
+      });
+      return api.organizations.adminBilling.plans.update.responses[200].parse(await res.json());
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [api.organizations.adminBilling.plans.list.path] });
+      queryClient.invalidateQueries({ queryKey: [api.organizations.billingPlans.path] });
+      toast({ title: 'Success', description: 'Plan updated' });
+    },
+    onError: (err) => toast({ variant: 'destructive', title: 'Error', description: err.message }),
+  });
+}
+
+export function useDeactivatePlan() {
+  const queryClient = useQueryClient();
+  const token = useAuthStore((state) => state.token);
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (planId: string) => {
+      const url = buildUrl(api.organizations.adminBilling.plans.deactivate.path, { planId });
+      const res = await apiFetch(url, {
+        method: api.organizations.adminBilling.plans.deactivate.method,
+        token,
+      });
+      return api.organizations.adminBilling.plans.deactivate.responses[200].parse(await res.json());
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [api.organizations.adminBilling.plans.list.path] });
+      queryClient.invalidateQueries({ queryKey: [api.organizations.billingPlans.path] });
+      toast({ title: 'Success', description: 'Plan deactivated' });
+    },
+    onError: (err) => toast({ variant: 'destructive', title: 'Error', description: err.message }),
+  });
+}
+
 export function useWaiveInvoice() {
   const queryClient = useQueryClient();
   const token = useAuthStore((state) => state.token);

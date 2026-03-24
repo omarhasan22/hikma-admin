@@ -1,17 +1,18 @@
 import { Link, useLocation } from "wouter";
 import { useLogout } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
-import { 
-  LayoutDashboard, 
-  Users, 
-  Stethoscope, 
-  Building2, 
-  Settings, 
+import {
+  LayoutDashboard,
+  Users,
+  Stethoscope,
+  Building2,
+  Settings,
   LogOut,
   Image,
   Sparkles,
   MessageSquare,
-  Lightbulb
+  Lightbulb,
+  CreditCard
 } from "lucide-react";
 
 const NAV_ITEMS = [
@@ -23,6 +24,7 @@ const NAV_ITEMS = [
   { label: "Sliders", href: "/content/sliders", icon: Image },
   { label: "Daily Tips", href: "/content/tips", icon: Lightbulb },
   { label: "Reviews", href: "/reviews", icon: MessageSquare },
+  { label: "Subscription Plans", href: "/subscription-plans", icon: CreditCard },
   { label: "Settings", href: "/settings", icon: Settings },
 ];
 

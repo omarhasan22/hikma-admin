@@ -19,6 +19,7 @@ import SpecialtiesPage from "@/pages/Specialties";
 import SlidersPage from "@/pages/Sliders";
 import DailyTipsPage from "@/pages/DailyTips";
 import ReviewsPage from "@/pages/Reviews";
+import SubscriptionPlansPage from "@/pages/SubscriptionPlans";
 const SettingsPage = () => <div className="p-8">Settings (Coming Soon)</div>;
 
 // Get base path from Vite (automatically includes /hikma-admin/ in production)
@@ -44,6 +45,7 @@ function AppRouter() {
         <Route path="/content/tips" component={DailyTipsPage} />
         <Route path="/content" component={SlidersPage} />
         <Route path="/reviews" component={ReviewsPage} />
+        <Route path="/subscription-plans" component={SubscriptionPlansPage} />
         <Route path="/settings" component={SettingsPage} />
         
         {/* Fallback to 404 */}

@@ -844,7 +844,7 @@ export const api = {
       },
       create: {
         method: 'POST' as const,
-        path: '/api/admin/clinics/:clinicId/subscription',
+        path: '/api/admin/billing/clinics/:clinicId/subscription',
         input: z.object({
           planId: z.string().uuid(),
           ownerId: z.string().uuid().optional(),
@@ -864,7 +864,7 @@ export const api = {
       },
       update: {
         method: 'PUT' as const,
-        path: '/api/admin/clinics/:clinicId/subscription',
+        path: '/api/admin/billing/clinics/:clinicId/subscription',
         input: z.object({
           paygFeeOverride: z.number().nullable().optional(),
           status: subscriptionStatusSchema.optional(),
@@ -884,7 +884,7 @@ export const api = {
       },
       changePlan: {
         method: 'POST' as const,
-        path: '/api/admin/clinics/:clinicId/subscription/change-plan',
+        path: '/api/admin/billing/clinics/:clinicId/subscription/change-plan',
         input: z.object({
           newPlanId: z.string().uuid(),
         }),
@@ -902,7 +902,7 @@ export const api = {
       },
       cancel: {
         method: 'POST' as const,
-        path: '/api/admin/clinics/:clinicId/subscription/cancel',
+        path: '/api/admin/billing/clinics/:clinicId/subscription/cancel',
         responses: {
           200: z.object({
             status: z.string(),
@@ -917,7 +917,7 @@ export const api = {
       },
       reactivate: {
         method: 'POST' as const,
-        path: '/api/admin/clinics/:clinicId/subscription/reactivate',
+        path: '/api/admin/billing/clinics/:clinicId/subscription/reactivate',
         responses: {
           200: z.object({
             status: z.string(),
@@ -946,7 +946,7 @@ export const api = {
     adminBilling: {
       subscriptions: {
         method: 'GET' as const,
-        path: '/api/admin/subscriptions',
+        path: '/api/admin/billing/subscriptions',
         input: z.object({
           status: subscriptionStatusSchema.optional(),
           limit: z.string().optional(),
@@ -962,7 +962,7 @@ export const api = {
       },
       invoices: {
         method: 'GET' as const,
-        path: '/api/admin/invoices',
+        path: '/api/admin/billing/invoices',
         input: z.object({
           status: invoiceStatusSchema.optional(),
           clinicId: z.string().uuid().optional(),
@@ -997,7 +997,7 @@ export const api = {
       },
       payInvoice: {
         method: 'POST' as const,
-        path: '/api/admin/invoices/:invoiceId/pay',
+        path: '/api/admin/billing/invoices/:invoiceId/pay',
         input: z.object({
           notes: z.string().nullable().optional(),
         }),
@@ -1015,7 +1015,7 @@ export const api = {
       },
       waiveInvoice: {
         method: 'POST' as const,
-        path: '/api/admin/invoices/:invoiceId/waive',
+        path: '/api/admin/billing/invoices/:invoiceId/waive',
         input: z.object({
           notes: z.string().nullable().optional(),
         }),
@@ -1033,7 +1033,7 @@ export const api = {
       },
       flaggedCharges: {
         method: 'GET' as const,
-        path: '/api/admin/charges',
+        path: '/api/admin/billing/charges',
         input: z.object({
           status: z.literal('flagged'),
           limit: z.string().optional(),
@@ -1049,7 +1049,7 @@ export const api = {
       },
       resolveCharge: {
         method: 'POST' as const,
-        path: '/api/admin/charges/:chargeId/resolve',
+        path: '/api/admin/billing/charges/:chargeId/resolve',
         input: z.object({
           resolution: z.enum(['credit', 'ignore']),
           notes: z.string().nullable().optional(),
@@ -1064,6 +1064,80 @@ export const api = {
               charge: appointmentChargeSchema,
             }),
           }),
+        },
+      },
+      plans: {
+        list: {
+          method: 'GET' as const,
+          path: '/api/admin/billing/plans',
+          responses: {
+            200: z.object({
+              status: z.string(),
+              error: z.string(),
+              errorCode: z.string(),
+              result: z.array(subscriptionPlanSchema),
+            }),
+          },
+        },
+        create: {
+          method: 'POST' as const,
+          path: '/api/admin/billing/plans',
+          input: z.object({
+            name: z.string().min(1),
+            nameAr: z.string().nullable().optional(),
+            type: subscriptionTypeSchema,
+            billingPeriod: billingPeriodSchema,
+            price: z.number().min(0).optional(),
+            paygFee: z.number().min(0).optional(),
+          }),
+          responses: {
+            201: z.object({
+              status: z.string(),
+              error: z.string(),
+              errorCode: z.string(),
+              result: z.object({
+                message: z.string(),
+                plan: subscriptionPlanSchema,
+              }),
+            }),
+          },
+        },
+        update: {
+          method: 'PUT' as const,
+          path: '/api/admin/billing/plans/:planId',
+          input: z.object({
+            name: z.string().min(1).optional(),
+            nameAr: z.string().nullable().optional(),
+            price: z.number().min(0).nullable().optional(),
+            paygFee: z.number().min(0).nullable().optional(),
+            isActive: z.boolean().optional(),
+          }),
+          responses: {
+            200: z.object({
+              status: z.string(),
+              error: z.string(),
+              errorCode: z.string(),
+              result: z.object({
+                message: z.string(),
+                plan: subscriptionPlanSchema,
+              }),
+            }),
+          },
+        },
+        deactivate: {
+          method: 'DELETE' as const,
+          path: '/api/admin/billing/plans/:planId',
+          responses: {
+            200: z.object({
+              status: z.string(),
+              error: z.string(),
+              errorCode: z.string(),
+              result: z.object({
+                message: z.string(),
+                plan: subscriptionPlanSchema,
+              }),
+            }),
+          },
         },
       },
     },
