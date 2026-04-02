@@ -24,7 +24,7 @@ export function useAddClinicDoctorService() {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async ({ doctorId, clinicId, data }: { doctorId: string; clinicId: string; data: { name: string; nameAr?: string; price: number; durationMinutes: number } }) => {
+    mutationFn: async ({ doctorId, clinicId, data }: { doctorId: string; clinicId: string; data: { name: string; nameAr?: string; price: number } }) => {
       const url = getApiUrl(buildUrl(api.clinicDoctorServices.create.path, { doctorId, clinicId }));
       const res = await fetch(url, {
         method: api.clinicDoctorServices.create.method,
@@ -59,7 +59,7 @@ export function useUpdateClinicDoctorService() {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async ({ doctorId, clinicId, serviceId, data }: { doctorId: string; clinicId: string; serviceId: string; data: Partial<{ name: string; nameAr: string; price: number; durationMinutes: number; displayOrder: number; isActive: boolean }> }) => {
+    mutationFn: async ({ doctorId, clinicId, serviceId, data }: { doctorId: string; clinicId: string; serviceId: string; data: Partial<{ name: string; nameAr: string; price: number; displayOrder: number; isActive: boolean }> }) => {
       const url = getApiUrl(buildUrl(api.clinicDoctorServices.update.path, { doctorId, clinicId, serviceId }));
       const res = await fetch(url, {
         method: api.clinicDoctorServices.update.method,

@@ -382,7 +382,6 @@ export const api = {
         name: z.string(),
         nameAr: z.string().optional(),
         price: z.number(),
-        durationMinutes: z.number(),
       }),
       responses: {
         201: z.object({
@@ -400,7 +399,6 @@ export const api = {
         name: z.string().optional(),
         nameAr: z.string().optional(),
         price: z.number().optional(),
-        durationMinutes: z.number().optional(),
         displayOrder: z.number().optional(),
         isActive: z.boolean().optional(),
       }),
@@ -579,6 +577,7 @@ export const api = {
         longitude: z.number().min(-180).max(180).optional(),
         timezone: z.string().max(50).optional(),
         logo_url: z.string().url().max(500).optional(),
+        is_medical_center: z.boolean().optional(),
       }),
       responses: {
         201: z.object({
@@ -595,7 +594,9 @@ export const api = {
     update: {
       method: 'PUT' as const,
       path: '/api/admin/clinics/:clinicId',
-      input: insertOrganizationSchema.partial(),
+      input: insertOrganizationSchema.partial().extend({
+        is_medical_center: z.boolean().optional(),
+      }),
       responses: {
         200: z.object({
           status: z.string(),

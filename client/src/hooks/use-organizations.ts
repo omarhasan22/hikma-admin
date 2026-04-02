@@ -76,8 +76,11 @@ export function useUpdateOrganization() {
          const response = api.organizations.update.responses[200].parse(await res.json());
          return response.result;
       },
-      onSuccess: () => {
+      onSuccess: (_, variables) => {
          queryClient.invalidateQueries({ queryKey: [api.organizations.list.path] });
+         if (variables?.clinicId) {
+            queryClient.invalidateQueries({ queryKey: [api.organizations.get.path, variables.clinicId] });
+         }
          toast({ title: "Success", description: "Organization updated successfully" });
       },
       onError: (err) => toast({ variant: "destructive", title: "Error", description: err.message })
@@ -197,4 +200,3 @@ export function useAddDoctorToClinic() {
       onError: (err) => toast({ variant: "destructive", title: "Error", description: err.message })
    });
 }
-

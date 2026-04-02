@@ -75,14 +75,14 @@ export default function DoctorDetailPage() {
   const [editingClinicId, setEditingClinicId] = useState<string | null>(null);
   const [editingServiceId, setEditingServiceId] = useState<string | null>(null);
   const [editingWorkingHoursDay, setEditingWorkingHoursDay] = useState<string | null>(null);
-  const [newService, setNewService] = useState<{ name: string; nameAr: string; price: string; durationMinutes: string } | null>(null);
+  const [newService, setNewService] = useState<{ name: string; nameAr: string; price: string } | null>(null);
   const [newWorkingHours, setNewWorkingHours] = useState<{ dayOfWeek: string; startTime: string; endTime: string; breakStart: string; breakEnd: string; isActive: boolean } | null>(null);
   
   // Clinic form state (per clinic)
   const [clinicFormData, setClinicFormData] = useState<Record<string, { defaultSlotDuration: string; maxBookingDays: string; isPrimary: boolean; role: string }>>({});
   
   // Service form state (per service)
-  const [serviceFormData, setServiceFormData] = useState<Record<string, { name: string; nameAr: string; price: string; durationMinutes: string }>>({});
+  const [serviceFormData, setServiceFormData] = useState<Record<string, { name: string; nameAr: string; price: string }>>({});
   
   // Working hours form state (per day)
   const [workingHoursFormData, setWorkingHoursFormData] = useState<Record<string, { startTime: string; endTime: string; breakStart: string; breakEnd: string; isActive: boolean }>>({});
@@ -956,15 +956,14 @@ export default function DoctorDetailPage() {
                   };
 
                   const handleAddService = () => {
-                    if (!newService?.name || !newService?.price || !newService?.durationMinutes) return;
+                    if (!newService?.name || !newService?.price) return;
                     addServiceMutation.mutate({
                       doctorId,
                       clinicId,
                       data: {
                         name: newService.name,
                         nameAr: newService.nameAr || undefined,
-                        price: parseFloat(newService.price),
-                        durationMinutes: parseInt(newService.durationMinutes)
+                        price: parseFloat(newService.price)
                       }
                     }, {
                       onSuccess: () => {
@@ -983,8 +982,7 @@ export default function DoctorDetailPage() {
                       data: {
                         name: form.name,
                         nameAr: form.nameAr || undefined,
-                        price: parseFloat(form.price),
-                        durationMinutes: parseInt(form.durationMinutes)
+                        price: parseFloat(form.price)
                       }
                     }, {
                       onSuccess: () => {
@@ -1206,7 +1204,7 @@ export default function DoctorDetailPage() {
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => setNewService({ name: '', nameAr: '', price: '', durationMinutes: '' })}
+                              onClick={() => setNewService({ name: '', nameAr: '', price: '' })}
                             >
                               <Plus className="w-4 h-4 mr-2" />
                               Add Service
@@ -1215,7 +1213,7 @@ export default function DoctorDetailPage() {
                         </div>
                         {newService && (
                           <div className="border rounded p-3 mb-2 space-y-2">
-                            <div className="grid grid-cols-2 gap-2">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                               <Input
                                 placeholder="Service Name"
                                 value={newService.name}
@@ -1232,12 +1230,6 @@ export default function DoctorDetailPage() {
                                 placeholder="Price"
                                 value={newService.price}
                                 onChange={(e) => setNewService({ ...newService, price: e.target.value })}
-                              />
-                              <Input
-                                type="number"
-                                placeholder="Duration (minutes)"
-                                value={newService.durationMinutes}
-                                onChange={(e) => setNewService({ ...newService, durationMinutes: e.target.value })}
                               />
                             </div>
                             <div className="flex gap-2">
@@ -1258,8 +1250,7 @@ export default function DoctorDetailPage() {
                               const form = serviceFormData[service.id] || {
                                 name: service.name || '',
                                 nameAr: service.name_ar || '',
-                                price: String(service.price || 0),
-                                durationMinutes: String(service.duration_minutes || 30)
+                                price: String(service.price || 0)
                               };
                               return (
                                 <div key={service.id} className="border rounded p-2 text-sm relative">
@@ -1280,24 +1271,14 @@ export default function DoctorDetailPage() {
                                         })}
                                         dir="rtl"
                                       />
-                                      <div className="grid grid-cols-2 gap-1">
-                                        <Input
-                                          type="number"
-                                          value={form.price}
-                                          onChange={(e) => setServiceFormData({
-                                            ...serviceFormData,
-                                            [service.id]: { ...form, price: e.target.value }
-                                          })}
-                                        />
-                                        <Input
-                                          type="number"
-                                          value={form.durationMinutes}
-                                          onChange={(e) => setServiceFormData({
-                                            ...serviceFormData,
-                                            [service.id]: { ...form, durationMinutes: e.target.value }
-                                          })}
-                                        />
-                                      </div>
+                                      <Input
+                                        type="number"
+                                        value={form.price}
+                                        onChange={(e) => setServiceFormData({
+                                          ...serviceFormData,
+                                          [service.id]: { ...form, price: e.target.value }
+                                        })}
+                                      />
                                       <div className="flex gap-1">
                                         <Button
                                           size="sm"
@@ -1324,7 +1305,7 @@ export default function DoctorDetailPage() {
                                     <>
                                       <div className="font-medium">{service.name || service.name_ar}</div>
                                       <div className="text-muted-foreground">
-                                        ${service.price?.toFixed(2) || '0.00'} • {service.duration_minutes || 30} min
+                                        ${service.price?.toFixed(2) || '0.00'}
                                       </div>
                                       {isEditingClinic && (
                                         <div className="absolute top-1 right-1 flex gap-1">

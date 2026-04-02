@@ -7,7 +7,7 @@ import {
   useUpdateUserRole,
   useDeleteUserRole
 } from "@/hooks/use-clinic-users";
-import { useAddDoctorToClinic } from "@/hooks/use-organizations";
+import { useAddDoctorToClinic, useUpdateOrganization } from "@/hooks/use-organizations";
 import { useAddStaff } from "@/hooks/use-staff";
 import { useOrganization } from "@/hooks/use-organizations";
 import { useDoctors } from "@/hooks/use-doctors";
@@ -15,6 +15,7 @@ import { useUsers } from "@/hooks/use-users";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { 
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow 
 } from "@/components/ui/table";
@@ -165,6 +166,8 @@ export default function ClinicUsersPage() {
   const [isAddUserOpen, setIsAddUserOpen] = useState(false);
   const [isUpdateRoleOpen, setIsUpdateRoleOpen] = useState(false);
   const [isRemoveOpen, setIsRemoveOpen] = useState(false);
+  const [isEditClinicOpen, setIsEditClinicOpen] = useState(false);
+  const [isMedicalCenter, setIsMedicalCenter] = useState(false);
   const [selectedUser, setSelectedUser] = useState<{
     clinicUserId: string;
     userId: string;
@@ -198,6 +201,7 @@ export default function ClinicUsersPage() {
   });
   const addUserMutation = useAddDoctorToClinic();
   const addStaffMutation = useAddStaff();
+  const updateClinicMutation = useUpdateOrganization();
   const updateRoleMutation = useUpdateUserRole();
   const deleteRoleMutation = useDeleteUserRole();
   const removeUserMutation = useRemoveUserFromClinic();
@@ -407,6 +411,19 @@ export default function ClinicUsersPage() {
     setIsRemoveOpen(true);
   };
 
+  const openEditClinicDialog = () => {
+    setIsMedicalCenter(Boolean((clinicData as any)?.is_medical_center));
+    setIsEditClinicOpen(true);
+  };
+
+  const handleSaveClinic = () => {
+    if (!clinicId) return;
+    updateClinicMutation.mutate(
+      { clinicId, data: { is_medical_center: isMedicalCenter } },
+      { onSuccess: () => setIsEditClinicOpen(false) }
+    );
+  };
+
   const isOwner = (user: typeof users[0]) => {
     return user.clinic_user_roles?.some(r => r.role === 'owner') || false;
   };
@@ -445,22 +462,64 @@ export default function ClinicUsersPage() {
                   clinicData?.name || "Clinic Users"
                 )}
               </h1>
+              {Boolean((clinicData as any)?.is_medical_center) && (
+                <Badge variant="outline" className="mt-2 bg-blue-50 text-blue-700 border-blue-200">
+                  Medical Center
+                </Badge>
+              )}
               <p className="text-muted-foreground mt-1">
                 Manage all users and their roles in this clinic
               </p>
             </div>
           </div>
-          <Dialog open={isAddUserOpen} onOpenChange={setIsAddUserOpen}>
-            <DialogTrigger asChild>
-              <Button className="bg-primary text-primary-foreground shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all rounded-xl">
-                <Plus className="w-4 h-4 mr-2" /> Add User
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-md">
-              <DialogHeader>
-                <DialogTitle>Add User to Clinic</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4 pt-4">
+          <div className="flex flex-wrap gap-2">
+            <Dialog open={isEditClinicOpen} onOpenChange={setIsEditClinicOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" className="rounded-xl" onClick={openEditClinicDialog}>
+                  <Edit className="w-4 h-4 mr-2" /> Edit Clinic
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Clinic Settings</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 pt-4">
+                  <div className="flex items-center justify-between rounded-lg border border-border p-3">
+                    <div>
+                      <Label htmlFor="medical-center">Medical Center</Label>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        When enabled, this clinic appears in the public medical centers list.
+                      </p>
+                    </div>
+                    <Switch
+                      id="medical-center"
+                      checked={isMedicalCenter}
+                      onCheckedChange={setIsMedicalCenter}
+                    />
+                  </div>
+                  <Button
+                    className="w-full"
+                    onClick={handleSaveClinic}
+                    disabled={updateClinicMutation.isPending}
+                  >
+                    {updateClinicMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                    Save Changes
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+
+            <Dialog open={isAddUserOpen} onOpenChange={setIsAddUserOpen}>
+              <DialogTrigger asChild>
+                <Button className="bg-primary text-primary-foreground shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all rounded-xl">
+                  <Plus className="w-4 h-4 mr-2" /> Add User
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Add User to Clinic</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 pt-4">
                 <div>
                   <Label htmlFor="role">Role *</Label>
                   <Select value={addUserRole} onValueChange={(value) => {
@@ -637,8 +696,9 @@ export default function ClinicUsersPage() {
                   {addUserMode === 'new' ? 'Create & Add User' : 'Add User'}
                 </Button>
               </div>
-            </DialogContent>
-          </Dialog>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
 
         {/* Filters & Search */}

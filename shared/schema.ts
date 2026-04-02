@@ -58,6 +58,7 @@ export const organizations = pgTable("organizations", {
   description: text("description"),
   website: text("website"),
   isApproved: boolean("is_approved").default(false),
+  isMedicalCenter: boolean("is_medical_center").default(false),
   logo: text("logo"),
   createdAt: timestamp("created_at").defaultNow(),
 });
