@@ -30,7 +30,7 @@ export default function LoginPage() {
             <ShieldCheck className="w-8 h-8" />
           </div>
           <h1 className="text-3xl font-display font-bold text-foreground mb-2">Admin Portal</h1>
-          <p className="text-muted-foreground">Secure access for Hikma administrators</p>
+          <p className="text-muted-foreground">Secure access for Hakeemak administrators</p>
         </div>
 
         <form onSubmit={handleLogin} className="space-y-6">
@@ -66,7 +66,7 @@ export default function LoginPage() {
       </div>
       
       <p className="mt-8 text-xs text-muted-foreground font-medium">
-        &copy; {new Date().getFullYear()} Hikma Health System. All rights reserved.
+        &copy; {new Date().getFullYear()} Hakeemak Health System. All rights reserved.
       </p>
     </div>
   );

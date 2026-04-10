@@ -1,7 +1,7 @@
 {
   "info": {
-    "name": "Hikma API - Superadmin",
-    "description": "Superadmin API endpoints for Hikma Medical Booking Platform\n\nFull CRUD access for users, doctors, organizations, services, sliders, and daily tips.",
+    "name": "Hakeemak API - Superadmin",
+    "description": "Superadmin API endpoints for Hakeemak Medical Booking Platform\n\nFull CRUD access for users, doctors, organizations, services, sliders, and daily tips.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -422,7 +422,7 @@
           "request": {
             "method": "POST",
             "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{accessToken}}"}],
-            "body": {"mode": "raw", "raw": "{\n  \"title\": \"Welcome to Hikma\",\n  \"description\": \"Your trusted medical booking platform\",\n  \"imageUrl\": \"https://example.com/slider1.jpg\",\n  \"overlayColor\": \"#4A90E2\",\n  \"displayOrder\": 1,\n  \"isActive\": true\n}"},
+            "body": {"mode": "raw", "raw": "{\n  \"title\": \"Welcome to Hakeemak\",\n  \"description\": \"Your trusted medical booking platform\",\n  \"imageUrl\": \"https://example.com/slider1.jpg\",\n  \"overlayColor\": \"#4A90E2\",\n  \"displayOrder\": 1,\n  \"isActive\": true\n}"},
             "url": {"raw": "{{baseUrl}}/api/sliders", "host": ["{{baseUrl}}"], "path": ["api", "sliders"]}
           }
         },

@@ -14,6 +14,60 @@ import { Loader2, Plus, Edit, Trash2, ImageIcon, X } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { getApiUrl } from "@/lib/api";
+
+function normalizeImageUrl(url?: string | null): string | null {
+  if (!url) return null;
+  if (url.startsWith("http://") || url.startsWith("https://") || url.startsWith("blob:") || url.startsWith("data:")) {
+    return url;
+  }
+  if (url.startsWith("/")) {
+    return getApiUrl(url);
+  }
+  return url;
+}
+
+function getImageFromEntity(entity?: any): string | null {
+  if (!entity) return null;
+
+  const images = entity.images;
+  if (images) {
+    if (Array.isArray(images) && images.length > 0) {
+      const sortedImages = [...images].sort(
+        (a, b) =>
+          Number(a?.displayOrder ?? a?.display_order ?? 0) -
+          Number(b?.displayOrder ?? b?.display_order ?? 0)
+      );
+      const fromArray = getImageFromEntity(sortedImages[0]);
+      if (fromArray) return fromArray;
+    } else if (typeof images === "object") {
+      const nestedValue =
+        images.imageUrl ??
+        images.image_url ??
+        images.url ??
+        images.src ??
+        null;
+      if (typeof nestedValue === "string") {
+        return normalizeImageUrl(nestedValue);
+      }
+    }
+  }
+
+  const value =
+    entity.imageUrl ??
+    entity.image_url ??
+    entity.icon ??
+    entity.iconUrl ??
+    entity.icon_url ??
+    entity.image ??
+    null;
+
+  return typeof value === "string" ? normalizeImageUrl(value) : null;
+}
+
+function getSpecialtyImageUrl(service?: any): string | null {
+  return getImageFromEntity(service);
+}
 
 export default function SpecialtiesPage() {
   const [search, setSearch] = useState("");
@@ -88,6 +142,7 @@ export default function SpecialtiesPage() {
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-muted/30 border-b border-border">
+                  <TableHead className="pl-6">Image</TableHead>
                   <TableHead className="pl-6">Name</TableHead>
                   <TableHead>Description</TableHead>
                   <TableHead>Status</TableHead>
@@ -95,67 +150,85 @@ export default function SpecialtiesPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredServices.map((service) => (
-                  <TableRow key={service.id} className="hover:bg-muted/20 border-b border-border last:border-0 transition-colors">
-                    <TableCell className="font-medium pl-6">{service.name}</TableCell>
-                    <TableCell className="text-muted-foreground max-w-md truncate">
-                      {service.description || "No description"}
-                    </TableCell>
-                    <TableCell>
-                      {service.is_active !== false && service.isActive !== false ? (
-                        <Badge variant="outline" className="bg-emerald-50 text-emerald-600 border-emerald-200">Active</Badge>
-                      ) : (
-                        <Badge variant="outline" className="bg-gray-50 text-gray-600 border-gray-200">Inactive</Badge>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right pr-6">
-                      <div className="flex items-center justify-end gap-2">
-                        <Dialog key={service.id}>
-                          <DialogTrigger asChild>
-                            <Button 
-                              size="sm" 
-                              variant="ghost"
-                              onClick={() => setEditingService(service)}
-                            >
-                              <Edit className="w-4 h-4" />
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-                            <DialogHeader>
-                              <DialogTitle>Edit Specialty</DialogTitle>
-                            </DialogHeader>
-                            <SpecialtyForm 
-                              key={service.id}
-                              service={service}
-                              onSubmit={(data) => {
-                                updateMutation.mutate({
-                                  serviceId: String(service.id),
-                                  data: data
-                                }, {
-                                  onSuccess: () => {
-                                    setEditingService(null);
-                                  }
-                                });
-                              }}
-                              isLoading={updateMutation.isPending}
-                            />
-                          </DialogContent>
-                        </Dialog>
-                        <Button 
-                          size="sm" 
-                          variant="ghost"
-                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                          onClick={() => handleDelete(String(service.id))}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {filteredServices.map((service) => {
+                  const imageUrl = getSpecialtyImageUrl(service);
+                  const isServiceActive = (service as any).is_active !== false && service.isActive !== false;
+                  return (
+                    <TableRow key={service.id} className="hover:bg-muted/20 border-b border-border last:border-0 transition-colors">
+                      <TableCell className="pl-6">
+                        {imageUrl ? (
+                          <img
+                            src={imageUrl}
+                            alt={service.name || "Specialty image"}
+                            className="w-14 h-14 rounded-lg object-cover border border-border"
+                          />
+                        ) : (
+                          <div className="w-14 h-14 rounded-lg bg-muted border border-border flex items-center justify-center">
+                            <ImageIcon className="w-6 h-6 text-muted-foreground" />
+                          </div>
+                        )}
+                      </TableCell>
+                      <TableCell className="font-medium pl-6">{service.name}</TableCell>
+                      <TableCell className="text-muted-foreground max-w-md truncate">
+                        {service.description || "No description"}
+                      </TableCell>
+                      <TableCell>
+                        {isServiceActive ? (
+                          <Badge variant="outline" className="bg-emerald-50 text-emerald-600 border-emerald-200">Active</Badge>
+                        ) : (
+                          <Badge variant="outline" className="bg-gray-50 text-gray-600 border-gray-200">Inactive</Badge>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right pr-6">
+                        <div className="flex items-center justify-end gap-2">
+                          <Dialog key={service.id}>
+                            <DialogTrigger asChild>
+                              <Button 
+                                size="sm" 
+                                variant="ghost"
+                                onClick={() => setEditingService(service)}
+                              >
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                              <DialogHeader>
+                                <DialogTitle>Edit Specialty</DialogTitle>
+                              </DialogHeader>
+                              <SpecialtyForm 
+                                key={service.id}
+                                service={service}
+                                fallbackImageUrl={imageUrl}
+                                onSubmit={(data) => {
+                                  updateMutation.mutate({
+                                    serviceId: String(service.id),
+                                    data: data
+                                  }, {
+                                    onSuccess: () => {
+                                      setEditingService(null);
+                                    }
+                                  });
+                                }}
+                                isLoading={updateMutation.isPending}
+                              />
+                            </DialogContent>
+                          </Dialog>
+                          <Button 
+                            size="sm" 
+                            variant="ghost"
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                            onClick={() => handleDelete(String(service.id))}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
                 {filteredServices.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center py-12 text-muted-foreground">
+                    <TableCell colSpan={5} className="text-center py-12 text-muted-foreground">
                       No specialties found.
                     </TableCell>
                   </TableRow>
@@ -171,10 +244,12 @@ export default function SpecialtiesPage() {
 
 function SpecialtyForm({ 
   service, 
+  fallbackImageUrl,
   onSubmit, 
   isLoading 
 }: { 
   service?: any; 
+  fallbackImageUrl?: string | null;
   onSubmit: (data: any) => void; 
   isLoading: boolean;
 }) {
@@ -184,8 +259,9 @@ function SpecialtyForm({
   const [descriptionAr, setDescriptionAr] = useState(service?.description_ar || service?.descriptionAr || "");
   const [isActive, setIsActive] = useState(service?.is_active !== undefined ? service.is_active : (service?.isActive !== undefined ? service.isActive : true));
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const currentServiceImage = getSpecialtyImageUrl(service) || fallbackImageUrl || null;
   const [imagePreview, setImagePreview] = useState<string | null>(
-    service?.icon || service?.image || service?.image_url || null
+    currentServiceImage
   );
 
   // Update form fields when service prop changes
@@ -201,7 +277,7 @@ function SpecialtyForm({
       setDescription(service.description || "");
       setDescriptionAr(service.description_ar || service.descriptionAr || "");
       setIsActive(service.is_active !== undefined ? service.is_active : (service.isActive !== undefined ? service.isActive : true));
-      setImagePreview(service.icon || service.image || service.image_url || null);
+      setImagePreview(getSpecialtyImageUrl(service) || fallbackImageUrl || null);
       setImageFile(null); // Reset file input when switching between services
     } else {
       // Reset form for new specialty
@@ -213,7 +289,7 @@ function SpecialtyForm({
       setImagePreview(null);
       setImageFile(null);
     }
-  }, [service]);
+  }, [service, fallbackImageUrl]);
 
   // Cleanup object URLs on unmount
   useEffect(() => {
@@ -334,7 +410,7 @@ function SpecialtyForm({
                 setImageFile(null);
                 // Restore previous image if it existed
                 if (service) {
-                  setImagePreview(service.icon || service.image || service.image_url || null);
+                  setImagePreview(getSpecialtyImageUrl(service) || fallbackImageUrl || null);
                 } else {
                   setImagePreview(null);
                 }
@@ -369,7 +445,7 @@ function SpecialtyForm({
               setImagePreview(URL.createObjectURL(file));
             } else {
               // Restore original image if clearing file input
-              setImagePreview(service?.icon || service?.image || service?.image_url || null);
+              setImagePreview(getSpecialtyImageUrl(service) || fallbackImageUrl || null);
             }
           }}
         />
@@ -398,4 +474,3 @@ function SpecialtyForm({
     </form>
   );
 }
-

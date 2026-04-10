@@ -7,6 +7,7 @@ import { useEffect } from "react";
 import { api } from "@shared/routes";
 import { apiFetch } from "@/lib/api";
 import { useAuthStore } from "@/stores/authStore";
+import { mapBackendUserToFrontendUser } from "@/hooks/use-auth";
 import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/Dashboard";
 import Login from "@/pages/Login";
@@ -22,7 +23,7 @@ import ReviewsPage from "@/pages/Reviews";
 import SubscriptionPlansPage from "@/pages/SubscriptionPlans";
 const SettingsPage = () => <div className="p-8">Settings (Coming Soon)</div>;
 
-// Get base path from Vite (automatically includes /hikma-admin/ in production)
+// Get base path from Vite (automatically includes /hakeemak-admin/ in production)
 // Remove trailing slash for wouter's base prop
 // If base is just '/', use undefined (no base path needed)
 const baseUrl = import.meta.env.BASE_URL;
@@ -57,25 +58,46 @@ function AppRouter() {
 
 function App() {
   const setAuth = useAuthStore((s) => s.setAuth);
+  const hydrateAuth = useAuthStore((s) => s.hydrateAuth);
   const setBootstrapped = useAuthStore((s) => s.setBootstrapped);
+  const logout = useAuthStore((s) => s.logout);
 
   useEffect(() => {
     let cancelled = false;
 
     (async () => {
       try {
-        // Cookie-based session bootstrap: backend should read refresh/session cookie (httpOnly)
-        // and return a fresh access token.
+        hydrateAuth();
+        const { refreshToken, user, token } = useAuthStore.getState();
+
+        // Keep persisted access token active immediately while we try to rotate quietly.
+        if (token && !refreshToken) {
+          return;
+        }
+
+        if (!refreshToken) {
+          return;
+        }
+
         const res = await apiFetch(api.auth.refresh.path, {
           method: api.auth.refresh.method,
+          body: api.auth.refresh.input.parse({ refreshToken }),
+          skipAuthRefresh: true,
         });
         const json = await res.json();
         const parsed = api.auth.refresh.responses[200].safeParse(json);
-        if (parsed.success && parsed.data.data.accessToken && !cancelled) {
-          setAuth(parsed.data.data.accessToken, useAuthStore.getState().user);
+        if (parsed.success && parsed.data.result.access_token && !cancelled) {
+          const refreshedUser = parsed.data.result.profile
+            ? mapBackendUserToFrontendUser(parsed.data.result.profile)
+            : user;
+          setAuth(
+            parsed.data.result.access_token,
+            parsed.data.result.refresh_token ?? refreshToken,
+            refreshedUser
+          );
         }
       } catch {
-        // Ignore bootstrap failures; user will be redirected to login by protected layouts.
+        logout();
       } finally {
         if (!cancelled) setBootstrapped(true);
       }
@@ -84,7 +106,7 @@ function App() {
     return () => {
       cancelled = true;
     };
-  }, [setAuth, setBootstrapped]);
+  }, [hydrateAuth, logout, setAuth, setBootstrapped]);
 
   return (
     <QueryClientProvider client={queryClient}>

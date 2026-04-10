@@ -33,7 +33,7 @@ export default function UsersPage() {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <h1 className="text-3xl font-display font-bold text-foreground">Users</h1>
-            <p className="text-muted-foreground mt-1">Manage all system users (patients and doctors).</p>
+            <p className="text-muted-foreground mt-1">Manage all system users across patient, provider, and admin accounts.</p>
           </div>
           <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
             <DialogTrigger asChild>
@@ -67,7 +67,7 @@ export default function UsersPage() {
               <SelectContent>
                 <SelectItem value="all">All Types</SelectItem>
                 <SelectItem value="patient">Patient</SelectItem>
-                <SelectItem value="doctor">Doctor</SelectItem>
+                <SelectItem value="doctor">Provider</SelectItem>
                 <SelectItem value="admin">Admin</SelectItem>
               </SelectContent>
             </Select>
@@ -102,12 +102,17 @@ export default function UsersPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredUsers.map((user) => (
+                {filteredUsers.map((user: any) => {
+                  const displayName = [user.first_name, user.last_name].filter(Boolean).join(" ") || user.full_name || user.fullName || "N/A";
+                  const accountType = user.account_type || user.user_type || user.userType || "patient";
+                  const createdAt = user.created_at || user.createdAt;
+
+                  return (
                   <TableRow key={user.id} className="hover:bg-muted/20 border-b border-border last:border-0 transition-colors">
                     <TableCell className="font-medium pl-6">
                       <div className="flex items-center gap-2">
                         <User className="w-4 h-4 text-muted-foreground" />
-                        <span>{user.full_name || "N/A"}</span>
+                        <span>{displayName}</span>
                       </div>
                     </TableCell>
                     <TableCell>
@@ -124,16 +129,16 @@ export default function UsersPage() {
                     </TableCell>
                     <TableCell>
                       <Badge variant="outline" className="capitalize">
-                        {user.user_type || "patient"}
+                        {accountType}
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      {user.created_at 
-                        ? new Date(user.created_at).toLocaleDateString()
+                      {createdAt
+                        ? new Date(createdAt).toLocaleDateString()
                         : "-"}
                     </TableCell>
                   </TableRow>
-                ))}
+                )})}
                 {filteredUsers.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={5} className="text-center py-12 text-muted-foreground">
@@ -158,17 +163,19 @@ function UserForm({
   isLoading: boolean;
 }) {
   const [id, setId] = useState("");
-  const [userType, setUserType] = useState<"patient" | "doctor">("patient");
+  const [userType, setUserType] = useState<"patient" | "doctor" | "admin">("patient");
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const [firstName, ...rest] = fullName.trim().split(/\s+/);
     onSubmit({
       id,
       userType,
-      fullName,
+      firstName: firstName || fullName.trim(),
+      lastName: rest.length > 0 ? rest.join(" ") : undefined,
       phone,
       avatarUrl: avatarUrl || undefined
     });
@@ -189,13 +196,14 @@ function UserForm({
 
       <div>
         <Label htmlFor="userType">User Type *</Label>
-        <Select value={userType} onValueChange={(value: "patient" | "doctor") => setUserType(value)}>
+        <Select value={userType} onValueChange={(value: "patient" | "doctor" | "admin") => setUserType(value)}>
           <SelectTrigger>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="patient">Patient</SelectItem>
-            <SelectItem value="doctor">Doctor</SelectItem>
+            <SelectItem value="doctor">Provider</SelectItem>
+            <SelectItem value="admin">Admin</SelectItem>
           </SelectContent>
         </Select>
       </div>

@@ -6,8 +6,8 @@ export default defineConfig({
   // Base path for GitHub Pages (use repository name or set via VITE_BASE_PATH env variable)
   // For root domain GitHub Pages: base: '/'
   // For project pages: base: '/repository-name/'
-  // Repository name: hikma-admin (https://omarhasan22.github.io/hikma-admin/)
-  base: process.env.VITE_BASE_PATH || '/hikma-admin/',
+  // Repository name: hakeemak-admin (https://omarhasan22.github.io/hakeemak-admin/)
+  base: process.env.VITE_BASE_PATH || '/hakeemak-admin/',
   plugins: [
     react(),
   ],

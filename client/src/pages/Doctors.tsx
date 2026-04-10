@@ -180,7 +180,7 @@ export default function DoctorsPage() {
                   <TableHead>Phone</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>VIP</TableHead>
-                  <TableHead>Rating</TableHead>
+                  <TableHead>Recommendations</TableHead>
                   <TableHead className="text-right pr-6">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -268,14 +268,8 @@ export default function DoctorsPage() {
                       )}
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-1">
-                        <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                        <span className="font-medium">
-                          {doctor.rating_average || doctor.rating || '0.0'}
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          ({doctor.rating_count || doctor.reviewCount || 0})
-                        </span>
+                      <div className="inline-flex items-center rounded-md border border-primary/20 bg-primary/5 px-2.5 py-1 text-sm font-semibold text-primary">
+                        {doctor.recommend_count ?? doctor.recommendCount ?? 0}
                       </div>
                     </TableCell>
                     <TableCell className="text-right pr-6">
@@ -481,10 +475,12 @@ export function DoctorForm({
   const [licenseNumber, setLicenseNumber] = useState('');
   const [experienceYears, setExperienceYears] = useState('');
   const [address, setAddress] = useState('');
+  const [addressAr, setAddressAr] = useState('');
   const [latitude, setLatitude] = useState('');
   const [longitude, setLongitude] = useState('');
   const [whatsapp, setWhatsapp] = useState('');
   const [university, setUniversity] = useState('');
+  const [universityAr, setUniversityAr] = useState('');
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
 
@@ -514,6 +510,7 @@ export function DoctorForm({
           : ''
       );
       setAddress(doctor.address || '');
+      setAddressAr(doctor.address_ar || doctor.addressAr || '');
       // Handle latitude/longitude with proper null checking
       setLatitude(
         doctor.latitude !== null && doctor.latitude !== undefined
@@ -527,6 +524,7 @@ export function DoctorForm({
       );
       setWhatsapp(doctor.whatsapp || '');
       setUniversity(doctor.university || '');
+      setUniversityAr(doctor.university_ar || doctor.universityAr || '');
       setAvatarPreview(user.avatar_url || doctor.avatar_url || null);
       // Don't set username/password in edit mode
     } else {
@@ -545,10 +543,12 @@ export function DoctorForm({
       setLicenseNumber('');
       setExperienceYears('');
       setAddress('');
+      setAddressAr('');
       setLatitude('');
       setLongitude('');
       setWhatsapp('');
       setUniversity('');
+      setUniversityAr('');
       setAvatarFile(null);
       setAvatarPreview(null);
     }
@@ -590,10 +590,12 @@ export function DoctorForm({
       if (licenseNumber) data.licenseNumber = licenseNumber;
       if (experienceYears) data.experienceYears = parseInt(experienceYears) || undefined;
       if (address) data.address = address;
+      if (addressAr) data.addressAr = addressAr;
       if (latitude) data.latitude = parseFloat(latitude) || undefined;
       if (longitude) data.longitude = parseFloat(longitude) || undefined;
       if (whatsapp) data.whatsapp = whatsapp;
       if (university) data.university = university;
+      if (universityAr) data.universityAr = universityAr;
       
       // If avatar file is provided, use FormData
       if (avatarFile) {
@@ -625,10 +627,12 @@ export function DoctorForm({
       if (licenseNumber) formData.append('licenseNumber', licenseNumber);
       if (experienceYears) formData.append('experienceYears', experienceYears);
       if (address) formData.append('address', address);
+      if (addressAr) formData.append('address_ar', addressAr);
       if (latitude) formData.append('latitude', latitude);
       if (longitude) formData.append('longitude', longitude);
       if (whatsapp) formData.append('whatsapp', whatsapp);
       if (university) formData.append('university', university);
+      if (universityAr) formData.append('university_ar', universityAr);
       if (avatarFile) {
         formData.append('avatar', avatarFile);
       }
@@ -805,14 +809,27 @@ export function DoctorForm({
         </div>
       </div>
 
-      <div>
-        <Label htmlFor="address">Address</Label>
-        <Input
-          id="address"
-          value={address}
-          onChange={(e) => setAddress(e.target.value)}
-          placeholder="123 Main Street, City, Country"
-        />
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label htmlFor="address">Address (English)</Label>
+          <Input
+            id="address"
+            value={address}
+            onChange={(e) => setAddress(e.target.value)}
+            placeholder="123 Main Street, City, Country"
+          />
+        </div>
+
+        <div>
+          <Label htmlFor="addressAr">Address (Arabic)</Label>
+          <Input
+            id="addressAr"
+            value={addressAr}
+            onChange={(e) => setAddressAr(e.target.value)}
+            placeholder="العنوان"
+            dir="rtl"
+          />
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
@@ -854,7 +871,7 @@ export function DoctorForm({
         </div>
 
         <div>
-          <Label htmlFor="university">University</Label>
+          <Label htmlFor="university">University (English)</Label>
           <Input
             id="university"
             value={university}
@@ -862,6 +879,17 @@ export function DoctorForm({
             placeholder="American University of Beirut"
           />
         </div>
+      </div>
+
+      <div>
+        <Label htmlFor="universityAr">University (Arabic)</Label>
+        <Input
+          id="universityAr"
+          value={universityAr}
+          onChange={(e) => setUniversityAr(e.target.value)}
+          placeholder="الجامعة"
+          dir="rtl"
+        />
       </div>
 
       <div>

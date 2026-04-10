@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { insertUserSchema, insertDoctorSchema, insertOrganizationSchema, insertServiceSchema, insertSliderSchema, insertTipSchema, insertServiceImageSchema, insertReviewSchema, users, doctors, organizations, services, sliders, dailyTips, serviceImages, reviews } from './schema';
+import { insertDoctorSchema, insertOrganizationSchema, insertServiceSchema, insertSliderSchema, insertTipSchema, insertServiceImageSchema, insertReviewSchema, users, doctors, organizations, services, sliders, dailyTips, serviceImages, reviews } from './schema';
 
 export const errorSchemas = {
   validation: z.object({
@@ -115,13 +115,17 @@ export const api = {
     refresh: {
       method: 'POST' as const,
       path: '/api/auth/refresh',
-      input: z.object({ refreshToken: z.string().optional() }).optional(),
+      input: z.object({ refreshToken: z.string() }),
       responses: {
         200: z.object({
-          data: z.object({
-            accessToken: z.string(),
-            refreshToken: z.string().optional()
-          })
+          status: z.string(),
+          error: z.string(),
+          errorCode: z.string(),
+          result: z.object({
+            access_token: z.string(),
+            refresh_token: z.string().optional(),
+            profile: z.any().optional(),
+          }),
         }),
         401: errorSchemas.unauthorized,
       },
@@ -151,13 +155,20 @@ export const api = {
     create: {
       method: 'POST' as const,
       path: '/api/users',
-      input: insertUserSchema,
+      input: z.object({
+        id: z.string().uuid(),
+        userType: z.enum(['patient', 'provider', 'doctor', 'admin']),
+        firstName: z.string().min(1).max(50),
+        lastName: z.string().max(50).optional().nullable(),
+        phone: z.string().optional().nullable(),
+        avatarUrl: z.string().url().optional().nullable(),
+      }),
       responses: {
         201: z.object({
           status: z.string(),
           error: z.string(),
           errorCode: z.string(),
-          result: z.custom<typeof users.$inferSelect>(),
+          result: z.any(),
         }),
         400: errorSchemas.validation,
       },
@@ -198,7 +209,13 @@ export const api = {
     create: {
       method: 'POST' as const,
       path: '/api/admin/doctors',
-      input: insertDoctorSchema,
+      input: insertDoctorSchema.extend({
+        addressAr: z.string().optional(),
+        address_ar: z.string().optional(),
+        university: z.string().optional(),
+        universityAr: z.string().optional(),
+        university_ar: z.string().optional(),
+      }),
       responses: {
         201: z.object({
           status: z.string(),
@@ -240,7 +257,13 @@ export const api = {
     update: {
       method: 'PUT' as const,
       path: '/api/admin/doctors/:doctorId',
-      input: insertDoctorSchema.partial(),
+      input: insertDoctorSchema.partial().extend({
+        addressAr: z.string().optional(),
+        address_ar: z.string().optional(),
+        university: z.string().optional(),
+        universityAr: z.string().optional(),
+        university_ar: z.string().optional(),
+      }),
       responses: {
         200: z.object({
           status: z.string(),

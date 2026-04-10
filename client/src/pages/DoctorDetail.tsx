@@ -55,10 +55,12 @@ export default function DoctorDetailPage() {
   const [licenseNumber, setLicenseNumber] = useState('');
   const [experienceYears, setExperienceYears] = useState('');
   const [address, setAddress] = useState('');
+  const [addressAr, setAddressAr] = useState('');
   const [latitude, setLatitude] = useState('');
   const [longitude, setLongitude] = useState('');
   const [whatsapp, setWhatsapp] = useState('');
   const [university, setUniversity] = useState('');
+  const [universityAr, setUniversityAr] = useState('');
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
 
@@ -124,10 +126,12 @@ export default function DoctorDetailPage() {
       setLicenseNumber('');
       setExperienceYears('');
       setAddress('');
+      setAddressAr('');
       setLatitude('');
       setLongitude('');
       setWhatsapp('');
       setUniversity('');
+      setUniversityAr('');
       setAvatarFile(null);
       setAvatarPreview(null);
     } else if (doctor && !isEditMode) {
@@ -152,6 +156,7 @@ export default function DoctorDetailPage() {
           : ''
       );
       setAddress(doctor.address || '');
+      setAddressAr(doctor.address_ar || doctor.addressAr || '');
       setLatitude(
         doctor.latitude !== null && doctor.latitude !== undefined
           ? String(doctor.latitude)
@@ -164,6 +169,7 @@ export default function DoctorDetailPage() {
       );
       setWhatsapp(doctor.whatsapp || '');
       setUniversity(doctor.university || '');
+      setUniversityAr(doctor.university_ar || doctor.universityAr || '');
       setAvatarPreview(user.avatar_url || doctor.avatar_url || null);
       setAvatarFile(null);
     }
@@ -199,10 +205,12 @@ export default function DoctorDetailPage() {
       if (licenseNumber) formData.append('licenseNumber', licenseNumber);
       if (experienceYears) formData.append('experienceYears', experienceYears);
       if (address) formData.append('address', address);
+      if (addressAr) formData.append('address_ar', addressAr);
       if (latitude) formData.append('latitude', latitude);
       if (longitude) formData.append('longitude', longitude);
       if (whatsapp) formData.append('whatsapp', whatsapp);
       if (university) formData.append('university', university);
+      if (universityAr) formData.append('university_ar', universityAr);
       if (avatarFile) {
         formData.append('avatar', avatarFile);
       }
@@ -258,10 +266,12 @@ export default function DoctorDetailPage() {
       if (licenseNumber) formData.append('license_number', licenseNumber);
       if (experienceYears) formData.append('experience_years', experienceYears);
       if (address) formData.append('address', address);
+      if (addressAr) formData.append('address_ar', addressAr);
       if (latitude) formData.append('latitude', latitude);
       if (longitude) formData.append('longitude', longitude);
       if (whatsapp) formData.append('whatsapp', whatsapp);
       if (university) formData.append('university', university);
+      if (universityAr) formData.append('university_ar', universityAr);
       
       // Avatar
       if (avatarFile) {
@@ -305,6 +315,7 @@ export default function DoctorDetailPage() {
           : ''
       );
       setAddress(doctor.address || '');
+      setAddressAr(doctor.address_ar || doctor.addressAr || '');
       setLatitude(
         doctor.latitude !== null && doctor.latitude !== undefined
           ? String(doctor.latitude)
@@ -317,6 +328,7 @@ export default function DoctorDetailPage() {
       );
       setWhatsapp(doctor.whatsapp || '');
       setUniversity(doctor.university || '');
+      setUniversityAr(doctor.university_ar || doctor.universityAr || '');
       setAvatarPreview(user.avatar_url || doctor.avatar_url || null);
       setAvatarFile(null);
       }
@@ -361,106 +373,107 @@ export default function DoctorDetailPage() {
   const user = doctor?.user || {};
   const isApproved = doctor?.is_approved || doctor?.isApproved;
   const isVip = doctor?.is_vip || doctor?.isVip;
+  const doctorDisplayName = user.full_name || `${firstName} ${lastName}`.trim() || "N/A";
+  const doctorSpecialty = doctor?.specialty?.name || "Specialty not assigned";
+  const doctorClinicsCount = doctor?.clinic_doctors?.length || 0;
+  const doctorRecommendCount = doctor?.recommend_count ?? doctor?.recommendCount ?? 0;
+  const cardClassName = "border-border/60 bg-card/95 shadow-sm";
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setLocation("/doctors")}
-              className="gap-2"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Back
-            </Button>
-            {isCreateMode && (
-              <h1 className="text-3xl font-display font-bold text-foreground">Create New Doctor</h1>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            {isEditMode ? (
-              <>
-                <Button
-                  variant="outline"
-                  onClick={handleCancel}
-                  disabled={isCreateMode ? createMutation.isPending : updateMutation.isPending}
-                  className="gap-2"
-                >
-                  <X className="w-4 h-4" />
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleSave}
-                  disabled={isCreateMode ? createMutation.isPending : updateMutation.isPending}
-                  className="gap-2"
-                >
-                  {(isCreateMode ? createMutation.isPending : updateMutation.isPending) ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Save className="w-4 h-4" />
-                  )}
-                  {isCreateMode ? "Create Doctor" : "Save Changes"}
-                </Button>
-              </>
-            ) : (
-              !isCreateMode && (
-                <Button
-                  onClick={() => setIsEditMode(true)}
-                  className="gap-2"
-                >
-                  <Edit className="w-4 h-4" />
-                  Edit Doctor
-                </Button>
-              )
-            )}
+      <div className="space-y-6 pb-8">
+        <div className="rounded-2xl border border-border/60 bg-gradient-to-br from-slate-50 via-background to-cyan-50/50 p-5 shadow-sm">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setLocation("/doctors")}
+                className="gap-2 rounded-full"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Back
+              </Button>
+              <div>
+                <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Provider Profile</p>
+                <h1 className="text-2xl font-display font-bold text-foreground">
+                  {isCreateMode ? "Create New Doctor" : doctorDisplayName}
+                </h1>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {isEditMode ? (
+                <>
+                  <Button
+                    variant="outline"
+                    onClick={handleCancel}
+                    disabled={isCreateMode ? createMutation.isPending : updateMutation.isPending}
+                    className="gap-2"
+                  >
+                    <X className="w-4 h-4" />
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleSave}
+                    disabled={isCreateMode ? createMutation.isPending : updateMutation.isPending}
+                    className="gap-2"
+                  >
+                    {(isCreateMode ? createMutation.isPending : updateMutation.isPending) ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Save className="w-4 h-4" />
+                    )}
+                    {isCreateMode ? "Create Doctor" : "Save Changes"}
+                  </Button>
+                </>
+              ) : (
+                !isCreateMode && (
+                  <Button
+                    onClick={() => setIsEditMode(true)}
+                    className="gap-2"
+                  >
+                    <Edit className="w-4 h-4" />
+                    Edit Doctor
+                  </Button>
+                )
+              )}
+            </div>
           </div>
         </div>
 
-        {/* Header Section with Avatar */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-start justify-between">
-              <div className="flex items-center gap-6">
+        <Card className={`${cardClassName} overflow-hidden`}>
+          <div className="h-1 w-full bg-gradient-to-r from-cyan-500 via-blue-500 to-teal-500" />
+          <CardContent className="pt-6">
+            <div className="flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between">
+              <div className="flex flex-1 flex-col gap-5 md:flex-row md:items-start">
                 <div className="relative">
-                  {isEditMode ? (
-                    <div className="relative">
-                      <img 
-                        src={avatarPreview || user.avatar_url || ""} 
-                        alt={user.full_name || "Doctor"} 
-                        className="w-24 h-24 rounded-full object-cover border-2 border-border"
-                      />
-                      <label className="absolute bottom-0 right-0 bg-primary text-primary-foreground rounded-full p-2 cursor-pointer hover:bg-primary/90 transition-colors">
-                        <Upload className="w-4 h-4" />
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={handleAvatarChange}
-                          className="hidden"
-                        />
-                      </label>
-                    </div>
+                  {(avatarPreview || user.avatar_url) ? (
+                    <img
+                      src={avatarPreview || user.avatar_url || ""}
+                      alt={doctorDisplayName}
+                      className="h-24 w-24 rounded-2xl object-cover ring-2 ring-border/60"
+                    />
                   ) : (
-                    user.avatar_url ? (
-                      <img 
-                        src={user.avatar_url} 
-                        alt={user.full_name || "Doctor"} 
-                        className="w-24 h-24 rounded-full object-cover border-2 border-border"
+                    <div className="h-24 w-24 rounded-2xl bg-muted flex items-center justify-center ring-2 ring-border/60">
+                      <User className="w-10 h-10 text-muted-foreground" />
+                    </div>
+                  )}
+                  {isEditMode && (
+                    <label className="absolute -bottom-2 -right-2 rounded-full bg-primary text-primary-foreground p-2 cursor-pointer shadow hover:bg-primary/90 transition-colors">
+                      <Upload className="w-4 h-4" />
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleAvatarChange}
+                        className="hidden"
                       />
-                    ) : (
-                      <div className="w-24 h-24 rounded-full bg-muted flex items-center justify-center border-2 border-border">
-                        <User className="w-12 h-12 text-muted-foreground" />
-                      </div>
-                    )
+                    </label>
                   )}
                 </div>
-                <div>
+                <div className="flex-1 space-y-3">
                   {isEditMode ? (
                     <div className="space-y-3">
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div>
                           <Label htmlFor="firstName">First Name (EN) *</Label>
                           <Input
@@ -505,35 +518,72 @@ export default function DoctorDetailPage() {
                     </div>
                   ) : (
                     <>
-                      <CardTitle className="text-3xl">{user.full_name || `${firstName} ${lastName}` || "N/A"}</CardTitle>
-                      <div className="flex items-center gap-2 mt-2">
+                      <CardTitle className="text-3xl leading-tight">{doctorDisplayName}</CardTitle>
+                      <div className="flex flex-wrap items-center gap-2">
                         {isApproved ? (
-                          <Badge variant="outline" className="bg-emerald-50 text-emerald-600 border-emerald-200">
+                          <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200">
                             <CheckCircle className="w-3 h-3 mr-1" /> Approved
                           </Badge>
                         ) : (
-                          <Badge variant="outline" className="bg-amber-50 text-amber-600 border-amber-200">
-                            <Clock className="w-3 h-3 mr-1" /> Pending
+                          <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
+                            <Clock className="w-3 h-3 mr-1" /> Pending Approval
                           </Badge>
                         )}
                         {isVip && (
-                          <Badge variant="outline" className="bg-amber-50 text-amber-600 border-amber-200">
+                          <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
                             <Star className="w-3 h-3 mr-1 fill-amber-600" /> VIP
                           </Badge>
                         )}
+                        <Badge variant="secondary" className="font-medium">
+                          <Stethoscope className="w-3 h-3 mr-1" />
+                          {doctorSpecialty}
+                        </Badge>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-muted-foreground">
+                        <div className="flex items-center gap-2 rounded-lg border border-border/60 bg-background px-3 py-2">
+                          <Phone className="w-4 h-4 text-primary" />
+                          <span>{phone || "No phone number"}</span>
+                        </div>
+                        <div className="flex items-center gap-2 rounded-lg border border-border/60 bg-background px-3 py-2">
+                          <Mail className="w-4 h-4 text-primary" />
+                          <span>{email || "No email"}</span>
+                        </div>
                       </div>
                     </>
                   )}
                 </div>
               </div>
+              {!isCreateMode && !isEditMode && (
+                <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-3 xl:w-[540px]">
+                  <div className="rounded-xl border border-primary/20 bg-primary/5 p-3">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.08em] leading-tight text-primary/80 break-words">
+                      Recommendations
+                    </p>
+                    <p className="mt-1 text-2xl font-semibold text-primary">{doctorRecommendCount}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">Community recommendations received</p>
+                  </div>
+                  <div className="rounded-xl border border-border/60 bg-background p-3">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.08em] leading-tight text-muted-foreground">
+                      Clinics
+                    </p>
+                    <p className="mt-1 text-xl font-semibold">{doctorClinicsCount}</p>
+                  </div>
+                  <div className="rounded-xl border border-border/60 bg-background p-3">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.08em] leading-tight text-muted-foreground">
+                      Profile Views
+                    </p>
+                    <p className="mt-1 text-xl font-semibold">{analytics?.profileViews?.total ?? "0"}</p>
+                  </div>
+                </div>
+              )}
             </div>
-          </CardHeader>
+          </CardContent>
         </Card>
 
         {/* Personal Information Section */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+        <Card className={cardClassName}>
+          <CardHeader className="border-b bg-muted/20 pb-4">
+            <CardTitle className="flex items-center gap-2 text-base font-semibold">
               <User className="w-5 h-5" />
               Personal Information
             </CardTitle>
@@ -612,8 +662,8 @@ export default function DoctorDetailPage() {
                   </div>
                 )}
               </div>
-              <div className="md:col-span-2">
-                <Label htmlFor="address">Address</Label>
+              <div>
+                <Label htmlFor="address">Address (English)</Label>
                 {isEditMode ? (
                   <Input
                     id="address"
@@ -625,6 +675,23 @@ export default function DoctorDetailPage() {
                   <div className="flex items-center gap-2 text-muted-foreground mt-1">
                     <MapPin className="w-4 h-4" />
                     <span>{address || "N/A"}</span>
+                  </div>
+                )}
+              </div>
+              <div>
+                <Label htmlFor="addressAr">Address (Arabic)</Label>
+                {isEditMode ? (
+                  <Input
+                    id="addressAr"
+                    value={addressAr}
+                    onChange={(e) => setAddressAr(e.target.value)}
+                    className="mt-1"
+                    dir="rtl"
+                  />
+                ) : (
+                  <div className="flex items-center gap-2 text-muted-foreground mt-1">
+                    <MapPin className="w-4 h-4" />
+                    <span dir="rtl">{addressAr || "غير متوفر"}</span>
                   </div>
                 )}
               </div>
@@ -662,9 +729,9 @@ export default function DoctorDetailPage() {
         </Card>
 
         {/* Professional Information Section */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+        <Card className={cardClassName}>
+          <CardHeader className="border-b bg-muted/20 pb-4">
+            <CardTitle className="flex items-center gap-2 text-base font-semibold">
               <Stethoscope className="w-5 h-5" />
               Professional Information
             </CardTitle>
@@ -710,7 +777,7 @@ export default function DoctorDetailPage() {
                 )}
               </div>
               <div>
-                <Label htmlFor="university">University</Label>
+                <Label htmlFor="university">University (English)</Label>
                 {isEditMode ? (
                   <Input
                     id="university"
@@ -722,6 +789,23 @@ export default function DoctorDetailPage() {
                   <div className="flex items-center gap-2 text-muted-foreground mt-1">
                     <Globe className="w-4 h-4" />
                     <span>{university || "N/A"}</span>
+                  </div>
+                )}
+              </div>
+              <div>
+                <Label htmlFor="universityAr">University (Arabic)</Label>
+                {isEditMode ? (
+                  <Input
+                    id="universityAr"
+                    value={universityAr}
+                    onChange={(e) => setUniversityAr(e.target.value)}
+                    className="mt-1"
+                    dir="rtl"
+                  />
+                ) : (
+                  <div className="flex items-center gap-2 text-muted-foreground mt-1">
+                    <Globe className="w-4 h-4" />
+                    <span dir="rtl">{universityAr || "غير متوفر"}</span>
                   </div>
                 )}
               </div>
@@ -798,9 +882,14 @@ export default function DoctorDetailPage() {
             <Loader2 className="w-6 h-6 animate-spin text-primary" />
           </div>
         ) : !isCreateMode && analytics && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold tracking-tight">Performance Snapshot</h2>
+              <p className="text-sm text-muted-foreground">Live platform metrics</p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {/* Appointments */}
-            <Card>
+            <Card className={`${cardClassName} border-l-4 border-l-cyan-500`}>
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-medium text-muted-foreground">Total Appointments</CardTitle>
               </CardHeader>
@@ -828,7 +917,7 @@ export default function DoctorDetailPage() {
             </Card>
 
             {/* Profile Views */}
-            <Card>
+            <Card className={`${cardClassName} border-l-4 border-l-blue-500`}>
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-medium text-muted-foreground">Profile Views</CardTitle>
               </CardHeader>
@@ -855,45 +944,27 @@ export default function DoctorDetailPage() {
               </CardContent>
             </Card>
 
-            {/* Reviews */}
-            <Card>
+            {/* Recommendations */}
+            <Card className={`${cardClassName} border-l-4 border-l-primary`}>
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Reviews</CardTitle>
+                <CardTitle className="text-sm font-medium text-muted-foreground">Recommendations</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="flex items-center gap-2">
-                  <Star className="w-6 h-6 fill-yellow-400 text-yellow-400" />
-                  <div className="text-3xl font-bold">{analytics.reviews.average.toFixed(1)}</div>
-                </div>
+                <div className="text-3xl font-bold text-primary">{doctorRecommendCount}</div>
                 <div className="mt-4 text-sm text-muted-foreground">
-                  {analytics.reviews.total} total reviews
+                  Total patient recommendations
                 </div>
               </CardContent>
             </Card>
-
-            {/* Rating */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Overall Rating</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-2">
-                  <Star className="w-6 h-6 fill-yellow-400 text-yellow-400" />
-                  <div className="text-3xl font-bold">{doctor.rating_average || doctor.rating || "0.0"}</div>
-                </div>
-                <div className="mt-4 text-sm text-muted-foreground">
-                  {doctor.rating_count || doctor.reviewCount || 0} ratings
-                </div>
-              </CardContent>
-            </Card>
+            </div>
           </div>
         )}
 
         {/* Clinics Section */}
         {!isCreateMode && doctor?.clinic_doctors && doctor.clinic_doctors.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+          <Card className={cardClassName}>
+            <CardHeader className="border-b bg-muted/20 pb-4">
+              <CardTitle className="flex items-center gap-2 text-base font-semibold">
                 <Building2 className="w-5 h-5" />
                 Clinics ({doctor.clinic_doctors.length})
               </CardTitle>
@@ -1047,7 +1118,7 @@ export default function DoctorDetailPage() {
                   };
 
                   return (
-                    <div key={clinicDoctor.id} className="border rounded-lg p-4 space-y-4">
+                    <div key={clinicDoctor.id} className="rounded-xl border border-border/60 bg-background p-4 shadow-sm space-y-4">
                       {/* Clinic Header */}
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
@@ -1819,9 +1890,9 @@ export default function DoctorDetailPage() {
 
         {/* Add to Clinic Section */}
         {!isCreateMode && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+        <Card className={cardClassName}>
+          <CardHeader className="border-b bg-muted/20 pb-4">
+            <CardTitle className="flex items-center gap-2 text-base font-semibold">
               <Building2 className="w-5 h-5" />
               Add Doctor to Clinic
             </CardTitle>
@@ -1873,9 +1944,9 @@ export default function DoctorDetailPage() {
 
         {/* Recent Profile Views */}
         {!isCreateMode && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Recent Profile Views</CardTitle>
+        <Card className={cardClassName}>
+          <CardHeader className="border-b bg-muted/20 pb-4">
+            <CardTitle className="text-base font-semibold">Recent Profile Views</CardTitle>
           </CardHeader>
           <CardContent>
             {viewsLoading ? (
@@ -1883,7 +1954,7 @@ export default function DoctorDetailPage() {
                 <Loader2 className="w-6 h-6 animate-spin text-primary" />
               </div>
             ) : profileViews && profileViews.length > 0 ? (
-              <Table>
+              <Table className="rounded-lg overflow-hidden">
                 <TableHeader>
                   <TableRow>
                     <TableHead>Viewer</TableHead>

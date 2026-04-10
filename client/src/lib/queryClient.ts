@@ -1,10 +1,5 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
-import { API_BASE_URL } from "./config";
-import { useAuthStore } from "@/stores/authStore";
-
-function getAccessToken(): string | null {
-  return useAuthStore.getState().token;
-}
+import { apiFetch, getApiUrl } from "./api";
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
@@ -18,21 +13,9 @@ export async function apiRequest(
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
-  const fullUrl = url.startsWith("http") ? url : `${API_BASE_URL}${url}`;
-  
-  const headers: Record<string, string> = data ? { "Content-Type": "application/json" } : {};
-  
-  // Add authorization token if available
-  const token = getAccessToken();
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
-  }
-
-  const res = await fetch(fullUrl, {
+  const res = await apiFetch(url, {
     method,
-    headers,
-    body: data ? JSON.stringify(data) : undefined,
-    credentials: "include",
+    body: data,
   });
 
   await throwIfResNotOk(res);
@@ -46,25 +29,22 @@ export const getQueryFn: <T>(options: {
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
     const url = queryKey.join("/") as string;
-    const fullUrl = url.startsWith("http") ? url : `${API_BASE_URL}${url}`;
-    
-    const headers: Record<string, string> = {};
-    const token = getAccessToken();
-    if (token) {
-      headers["Authorization"] = `Bearer ${token}`;
+    const fullUrl = getApiUrl(url);
+
+    try {
+      const res = await apiFetch(fullUrl, { method: "GET" });
+      return await res.json();
+    } catch (error) {
+      if (
+        unauthorizedBehavior === "returnNull" &&
+        error instanceof Error &&
+        error.message.startsWith("401:")
+      ) {
+        return null;
+      }
+
+      throw error;
     }
-
-    const res = await fetch(fullUrl, {
-      headers,
-      credentials: "include",
-    });
-
-    if (unauthorizedBehavior === "returnNull" && res.status === 401) {
-      return null;
-    }
-
-    await throwIfResNotOk(res);
-    return await res.json();
   };
 
 export const queryClient = new QueryClient({
